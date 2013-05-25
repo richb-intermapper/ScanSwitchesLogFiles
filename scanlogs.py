@@ -5,64 +5,89 @@ Scan a switches.log file, concatenating all lines that begin with ' ' to the pre
 
 import sys
 import re
+import socket
+import struct
 
 
 tablelist = []                              # a list of dictionaries - one for each table (9 tables/poller)
+labeldict = {}                              # names (actually icon labels), indexed by imid
+adrsdict = {}                               # IP addresses, indexed by imid
 
 def processOpentable(line):
     pos = line.find('id=')
-    line = line.replace("id=","rid=")       # change "id" to "rid" on <KC_opentable
+    line = line.replace("id=","kcid=")      # change "id" to "kcid" on <KC_opentable
     t = line[0:24]
-    kvs = dict(re.findall(r'(\S+)=(".*?"|\S+)', line))
+    kvs = {k:v.strip("'") for k,v in re.findall(r'(\S+)=(".*?"|\S+)', line)}
 
     tbl = {}
     tbl['startTime'] = t
     tbl['imid'] = kvs['target']
-    tbl['rid'] = kvs['rid']
+    tbl['kcid'] = kvs['kcid']
     tbl['tableid'] = "-"
-    tbl['endTime'] = "                        "
+    tbl['endTime'] = "                        " # 24 spaces
     tbl['tableName'] = '-'
     tbl['rows'] = 0
     tablelist.append(tbl)
 
 
 def processKR(line):
-    line = line.replace('KR id','KR rid')   # change "id" to "rid" on <KR id...
-    kvs = dict(re.findall(r'(\S+)=(".*?"|\S+)', line))
+    line = line.replace('KR id','KR kcid')   # change "id" to "kcid" on <KR id...
+    kvs = {k:v.strip("'") for k,v in re.findall(r'(\S+)=(".*?"|\S+)', line)}
 
     for l in tablelist:
-        if l['rid'] == kvs['rid']:
-            l['tableid'] = kvs['id']
-            l['tableName'] = kvs['title']
-            l['rows'] = 0
+        if l['kcid'] == kvs['kcid']:
+            l['kcid'] += "+"                # mark the KCid as having received a KR
+            l['tableid'] = kvs['id']        # record the corresponding id= for the table
+            l['tableName'] = kvs['title']   # and the table name
+            l['rows'] = 0                   # zero out the row count
             break
 
 
 def processTableData(line):
     t = line[0:24]                          # get the time stamp from the line
-    kvs = dict(re.findall(r'(\S+)=(".*?"|\S+)', line))
+    kvs = {k:v.strip("'") for k,v in re.findall(r'(\S+)=(".*?"|\S+)', line)}
 
     for l in tablelist:
-        if l['tableid'] == kvs['id']:     # found matching table entry
+        if l['tableid'] == kvs['id']:       # found matching table entry
             if 'ParseError' in line:        # 'ParseError' indicates this is the last line of the table
-                l['tableid'] += 'X'         # mark it so it never matches
+                l['tableid'] += '+'         # mark it so it no longer matches
                 l['endTime'] = t            # save the end time
             else:
                 l['rows'] += 1              # otherwise, bump the row count
             break                           # and exit
 
 
+def processSQLline(line):
+    pos = line.find('VALUES (')
+    part = line[pos+len('VALUES ('):]
+    ary = part.split(",")
+    imid = ary[0].strip("'")
+    label = ary[1].strip("' ")
+    ip = ary[2].strip("'x ")
+    labeldict[imid] = label
+    adrsdict[imid] = ip
+
+
 def printTables(fo):
-    fo.write("%s, %s, %s, %s, %s, %s, %s\n" % ("Start", "End", "IMID", "rid", "tableName", "tid", "rows"))
+    fo.write("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % ("Start", "End", "IMID", "HexIP", "Label", "IP", "KCid", "tableName", "tid", "rows"))
     for l in tablelist:
         st = l['startTime']
         et = l['endTime']
         imid = l['imid']
-        rid = l['rid']
+        kcid = l['kcid']
         tn = l['tableName']
         tid = l['tableid']
         r = l['rows']
-        fo.write("%s, %s, %s, %s, %s, %s, %s\n" % (st, et, imid, rid, tn, tid, r))
+        lbl = labeldict[imid]
+        hexip = adrsdict[imid]
+        addr_long = int(hexip,16)
+        ip = socket.inet_ntoa(struct.pack(">L", addr_long))
+        diag = ""
+        if not "+" in kcid:
+            diag += "Never received matching 'KR'; "
+        if not "+" in tid:
+            diag += "Never received end of table data; "
+        fo.write("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % (st, et, imid, hexip, lbl, ip, kcid, tn, tid, r, diag))
 
 
 def processLine(line):
@@ -74,6 +99,8 @@ def processLine(line):
             processKR(line)
         elif '<KU_tabledata' in line:
             processTableData(line)
+    elif 'SQL #-1: INSERT INTO device' in line:
+        processSQLline(line)
 
 
 def main(argv=None):
@@ -82,9 +109,8 @@ def main(argv=None):
     #fo = sys.stdout
 
     f = open('switches.log.2013_05_23.txt','r')                      # debugging input & output files
-    fo = open('junk3.txt','w')
+    fo = open('junk3.csv','w')
     # fe = sys.stderr
-    fo.write("Hi Rich")
 
     prevline = f.readline()                         # read the first line
 
@@ -97,7 +123,7 @@ def main(argv=None):
             processLine(prevline)                   # process a completed line
             prevline = line                         # and save the current line for further processing
 
-    fo.write(prevline)
+    # fo.write(prevline)
     processLine(prevline)                           # finally, process this last line
 
     printTables(fo)
