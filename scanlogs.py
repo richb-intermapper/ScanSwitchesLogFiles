@@ -113,11 +113,11 @@ def processLine(line):
 
 def main(argv=None):
 
-    # f = sys.stdin                                   # open the files to read and write
-    # fo = sys.stdout
+    f = sys.stdin                                   # open the files to read and write
+    fo = sys.stdout
 
-    f = open('Edgar.switch.log','r')                      # debugging input & output files
-    fo = open('junk3.csv','w')
+    # f = open('Edgar.switch.log','r')                      # debugging input & output files
+    # fo = open('junk3.csv','w')
     # fe = sys.stderr
 
     fo.write("Reading switches.log from: %s\n" % os.path.abspath(f.name))

@@ -1,0 +1,36 @@
+Notes for preparing the scanlogs.py program:
+
+<KC_opentable - binds target (an IMID) to an id
+<KR with that matching ID binds a "table id" with a tableTitle
+<KU_tabledata binds that "table ID" to data, or to a "ParseError" to indicate that it's done.
+It is likely that a sequence of <KU_tabledata's with the same id all belong to the same table, then it falls out of use when the ParseError arrives.
+
+Each IMID has up to 9 tableTitles
+
+Read a line, parse out:	
+	- timestamp
+	- <Kx operation
+	- array/hash of all the key/value pairs
+	
+If it's a <KC_opentable, create new table for this IMID, waiting for its ID (renamed to rID)
+
+If it's a <KR id=... (they're all "<KR id="), find the outstanding rID from the <KC_opentable, and save the "tableID" and "title" in the data structure. Zero out the row count
+
+If it's a <KU_tabledata, find the matching tableID. If it's a parse error, null out the tableID (so it never matches again) and save end time stamp; else bump the Table row count
+
+class l2Table: [Don't actually use a class, but a dictionary for each table that gets saved in a list.
+    But these are the fields saved for each table.]
+	def __init__(self):
+		self.startTime=""
+		self.endTime=""
+		self.imid = ""
+		self.rid = ""
+		self.tableName= ""
+		self.tableid=""
+		self.rows=0
+
+http://stackoverflow.com/questions/4764547/creating-dictionary-from-space-separated-key-value-string-in-python
+
+To Do:
+
+- Stronger flag that we are missing certain KC id's or KR id's.
