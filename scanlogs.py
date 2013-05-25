@@ -3,6 +3,7 @@ Scan a switches.log file, concatenating all lines that begin with ' ' to the pre
  It's a filter - reads stdin, writes to stdout
 '''
 
+import os
 import sys
 import re
 import socket
@@ -69,7 +70,7 @@ def processSQLline(line):
 
 
 def printTables(fo):
-    fo.write("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % ("Start", "End", "IMID", "HexIP", "Label", "IP", "KCid", "tableName", "tid", "rows"))
+    fo.write("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % ("Start", "End", "IMID", "HexIP", "KCid", "TableID", "IP", "Label", "TableName", "Rows", "Diag"))
     for l in tablelist:
         st = l['startTime']
         et = l['endTime']
@@ -85,9 +86,9 @@ def printTables(fo):
         diag = ""
         if not "+" in kcid:
             diag += "Never received matching 'KR'; "
-        if not "+" in tid:
+        if not "+" in tid and r != 0:
             diag += "Never received end of table data; "
-        fo.write("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % (st, et, imid, hexip, lbl, ip, kcid, tn, tid, r, diag))
+        fo.write("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % (st, et, imid, hexip, kcid, tid, ip, lbl, tn, r, diag))
 
 
 def processLine(line):
@@ -105,12 +106,14 @@ def processLine(line):
 
 def main(argv=None):
 
-    #f = sys.stdin                                   # open the files to read and write
-    #fo = sys.stdout
+    f = sys.stdin                                   # open the files to read and write
+    fo = sys.stdout
 
-    f = open('switches.log.2013_05_23.txt','r')                      # debugging input & output files
-    fo = open('junk3.csv','w')
+    # f = open('switches.log.2013_05_23.txt','r')                      # debugging input & output files
+    # fo = open('junk3.csv','w')
     # fe = sys.stderr
+
+    fo.write("Reading switches.log from: %s\n" % os.path.abspath(f.name))
 
     prevline = f.readline()                         # read the first line
 
