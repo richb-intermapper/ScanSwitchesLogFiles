@@ -14,6 +14,9 @@ tablelist = []                              # a list of dictionaries - one for e
 labeldict = {}                              # names (actually icon labels), indexed by imid
 adrsdict = {}                               # IP addresses, indexed by imid
 
+labeldict.setdefault("-")
+adrsdict.setdefault("-")
+
 def processOpentable(line):
     pos = line.find('id=')
     line = line.replace("id=","kcid=")      # change "id" to "kcid" on <KC_opentable
@@ -79,8 +82,12 @@ def printTables(fo):
         tn = l['tableName']
         tid = l['tableid']
         r = l['rows']
-        lbl = labeldict[imid]
-        hexip = adrsdict[imid]
+        lbl = "-"
+        if imid in labeldict:
+            lbl = labeldict[imid]
+        hexip = "00"
+        if imid in adrsdict:
+            hexip = adrsdict[imid]
         addr_long = int(hexip,16)
         ip = socket.inet_ntoa(struct.pack(">L", addr_long))
         diag = ""
@@ -106,11 +113,11 @@ def processLine(line):
 
 def main(argv=None):
 
-    f = sys.stdin                                   # open the files to read and write
-    fo = sys.stdout
+    # f = sys.stdin                                   # open the files to read and write
+    # fo = sys.stdout
 
-    # f = open('switches.log.2013_05_23.txt','r')                      # debugging input & output files
-    # fo = open('junk3.csv','w')
+    f = open('Edgar.switch.log','r')                      # debugging input & output files
+    fo = open('junk3.csv','w')
     # fe = sys.stderr
 
     fo.write("Reading switches.log from: %s\n" % os.path.abspath(f.name))
