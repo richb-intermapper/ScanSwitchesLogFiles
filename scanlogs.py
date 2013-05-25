@@ -9,7 +9,6 @@ import re
 
 tablelist = []                              # a list of dictionaries - one for each table (9 tables/poller)
 
-
 def processOpentable(line):
     pos = line.find('id=')
     line = line.replace("id=","rid=")       # change "id" to "rid" on <KC_opentable
@@ -20,6 +19,10 @@ def processOpentable(line):
     tbl['startTime'] = t
     tbl['imid'] = kvs['target']
     tbl['rid'] = kvs['rid']
+    tbl['tableid'] = "-"
+    tbl['endTime'] = "                        "
+    tbl['tableName'] = '-'
+    tbl['rows'] = 0
     tablelist.append(tbl)
 
 
@@ -38,11 +41,10 @@ def processKR(line):
 def processTableData(line):
     t = line[0:24]                          # get the time stamp from the line
     kvs = dict(re.findall(r'(\S+)=(".*?"|\S+)', line))
-    eotbl = 'ParseError' in line            # 'ParseError' indicates this is the last line of the table
 
     for l in tablelist:
-        if l['tableid']==kvs['id']:         # found matching table entry
-            if eotbl:                       # it's the end of the entries for this table
+        if l['tableid'] == kvs['id']:     # found matching table entry
+            if 'ParseError' in line:        # 'ParseError' indicates this is the last line of the table
                 l['tableid'] += 'X'         # mark it so it never matches
                 l['endTime'] = t            # save the end time
             else:
@@ -53,7 +55,14 @@ def processTableData(line):
 def printTables(fo):
     fo.write("%s, %s, %s, %s, %s, %s, %s\n" % ("Start", "End", "IMID", "rid", "tableName", "tid", "rows"))
     for l in tablelist:
-        fo.write("%s, %s, %s, %s, %s, %s, %s\n" % (l['startTime'], l['endTime'], l['imid'], l['rid'], l['tableName'], l['tableid'], l['rows']))
+        st = l['startTime']
+        et = l['endTime']
+        imid = l['imid']
+        rid = l['rid']
+        tn = l['tableName']
+        tid = l['tableid']
+        r = l['rows']
+        fo.write("%s, %s, %s, %s, %s, %s, %s\n" % (st, et, imid, rid, tn, tid, r))
 
 
 def processLine(line):
@@ -69,11 +78,13 @@ def processLine(line):
 
 def main(argv=None):
 
-    # f = sys.stdin                                   # open the files to read and write
-    # fo = sys.stdout
+    #f = sys.stdin                                   # open the files to read and write
+    #fo = sys.stdout
 
-    f = open('junk1.txt','r')                      # debugging input & output files
-    fo = open('junk2.txt','w')
+    f = open('switches.log.2013_05_23.txt','r')                      # debugging input & output files
+    fo = open('junk3.txt','w')
+    # fe = sys.stderr
+    fo.write("Hi Rich")
 
     prevline = f.readline()                         # read the first line
 
@@ -86,7 +97,7 @@ def main(argv=None):
             processLine(prevline)                   # process a completed line
             prevline = line                         # and save the current line for further processing
 
-    #fo.write(prevline )
+    fo.write(prevline)
     processLine(prevline)                           # finally, process this last line
 
     printTables(fo)
