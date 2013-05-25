@@ -4,18 +4,15 @@ Scan a switches.log file to prepare a history of the InterMapper Layer2 scan/har
 The program is a filter - it reads stdin and writes to stdout.
 These can be overridden by -i and -o arguments.
 
+
 There are four important pieces of information garnered from the file.
-They require that log.kali and log.sql both be true
-As scanlogs reads the input file it detects:
+They require that log.kali and log.sql both be true before beginning the scan
+As scanlogs.py reads the input file it detects:
 
 SQL "INSERT INTO device" lines contain data about the IMID, the IP address, name/label, and sysSvcs for all "pollers"
 <KC_opentable lines that contain an IMID for a device and the KCid to link it to the following "<KR"
 <KR with a matching KCid that also contains a "table id" and a tableTitle (ifIndex, ifAddrTable, etc.)
 <KU_tabledata lines with the same "table ID" to data, or to a "ParseError" to indicate that it's the last line.
-
-Example:
-
-
 
 '''
 
@@ -154,7 +151,7 @@ def processLine(line):
 def main(argv=None):
 
     try:
-        parser = argparse.ArgumentParser()
+        parser = argparse.ArgumentParser(description=__doc__)
         parser.add_argument("-i", '--infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin)
         parser.add_argument("-o", '--outfile', nargs='?', type=argparse.FileType('w'), default=sys.stdout)
         theArgs = parser.parse_args()
