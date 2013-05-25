@@ -1,6 +1,22 @@
 '''
-Scan a switches.log file, concatenating all lines that begin with ' ' to the previous line
- It's a filter - reads stdin, writes to stdout
+Scan a switches.log file to prepare a history of the InterMapper Layer2 scan/harvest operation
+
+The program is a filter - it reads stdin and writes to stdout.
+These can be overridden by -i and -o arguments.
+
+There are four important pieces of information garnered from the file.
+They require that log.kali and log.sql both be true
+As scanlogs reads the input file it detects:
+
+SQL "INSERT INTO device" lines contain data about the IMID, the IP address, name/label, and sysSvcs for all "pollers"
+<KC_opentable lines that contain an IMID for a device and the KCid to link it to the following "<KR"
+<KR with a matching KCid that also contains a "table id" and a tableTitle (ifIndex, ifAddrTable, etc.)
+<KU_tabledata lines with the same "table ID" to data, or to a "ParseError" to indicate that it's the last line.
+
+Example:
+
+
+
 '''
 
 import os
@@ -8,14 +24,29 @@ import sys
 import re
 import socket
 import struct
-
+import argparse
 
 tablelist = []                              # a list of dictionaries - one for each table (9 tables/poller)
 labeldict = {}                              # names (actually icon labels), indexed by imid
 adrsdict = {}                               # IP addresses, indexed by imid
+syssvcdict = {}                             # and the system services
+
+syssvclookup = {
+    '1': "Hub",
+    '2': "Sw",
+    '4': "Rtr",
+    '6': "L3 Sw",
+    '7': "L3 SwHub",
+    '64': "Host (64)",
+    '72': "Host (72)",
+    '76': "Host (76)",
+    '78': "Host (78)"
+}
 
 labeldict.setdefault("-")
 adrsdict.setdefault("-")
+syssvcdict.setdefault("?")
+syssvclookup.setdefault("-")
 
 def processOpentable(line):
     pos = line.find('id=')
@@ -68,12 +99,18 @@ def processSQLline(line):
     imid = ary[0].strip("'")
     label = ary[1].strip("' ")
     ip = ary[2].strip("'x ")
+    svcs = ary[6].strip("' ")
+    svc = str(svcs)
+    if svcs in syssvclookup:
+        svc = syssvclookup[svcs]
+
+    syssvcdict[imid] = svc
     labeldict[imid] = label
     adrsdict[imid] = ip
 
 
 def printTables(fo):
-    fo.write("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % ("Start", "End", "IMID", "HexIP", "KCid", "TableID", "IP", "Label", "TableName", "Rows", "Diag"))
+    fo.write("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % ("Start", "End", "IMID", "HexIP", "KCid", "TableID", "IP", "Label", "SysSvc", "TableName", "Rows", "Diag"))
     for l in tablelist:
         st = l['startTime']
         et = l['endTime']
@@ -86,6 +123,9 @@ def printTables(fo):
         if imid in labeldict:
             lbl = labeldict[imid]
         hexip = "00"
+        svc = "?"
+        if imid in syssvcdict:
+            svc = syssvcdict[imid]
         if imid in adrsdict:
             hexip = adrsdict[imid]
         addr_long = int(hexip,16)
@@ -95,7 +135,7 @@ def printTables(fo):
             diag += "Never received matching 'KR'; "
         if not "+" in tid and r != 0:
             diag += "Never received end of table data; "
-        fo.write("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % (st, et, imid, hexip, kcid, tid, ip, lbl, tn, r, diag))
+        fo.write("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % (st, et, imid, hexip, kcid, tid, ip, lbl, svc, tn, r, diag))
 
 
 def processLine(line):
@@ -113,14 +153,20 @@ def processLine(line):
 
 def main(argv=None):
 
-    f = sys.stdin                                   # open the files to read and write
-    fo = sys.stdout
+    try:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-i", '--infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin)
+        parser.add_argument("-o", '--outfile', nargs='?', type=argparse.FileType('w'), default=sys.stdout)
+        theArgs = parser.parse_args()
+    except Exception, err:
+        return str(err)
 
-    # f = open('Edgar.switch.log','r')                      # debugging input & output files
-    # fo = open('junk3.csv','w')
-    # fe = sys.stderr
+    f = theArgs.infile
+    fo = theArgs.outfile
+    # f = open('switches.log', 'r')
+    # fo = open('switches.csv', 'w')
 
-    fo.write("Reading switches.log from: %s\n" % os.path.abspath(f.name))
+    # Now to the meat of the program
 
     prevline = f.readline()                         # read the first line
 
@@ -129,14 +175,14 @@ def main(argv=None):
             prevline = prevline[:-1]                # chop off the \n from prevline
             prevline += " " + line.strip() + "\n"   # add a space char, tack on new line, and add back \n
         else:
-            # fo.write(prevline)
             processLine(prevline)                   # process a completed line
             prevline = line                         # and save the current line for further processing
 
-    # fo.write(prevline)
     processLine(prevline)                           # finally, process this last line
 
-    printTables(fo)
+    fo.write("Reading switches.log, %s\n" % os.path.abspath(f.name))
+
+    printTables(fo)                                 # print the relevant information
 
 if __name__ == "__main__":
     sys.exit(main())
