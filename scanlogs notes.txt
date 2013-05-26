@@ -33,4 +33,8 @@ http://stackoverflow.com/questions/4764547/creating-dictionary-from-space-separa
 
 To Do:
 
-- Stronger flag that we are missing certain KC id's or KR id's.
+- Stronger indication that we are missing certain KC id's or KR id's.
+- Possibly look at loss of/error in KCid sequence numbers
+- Possibly look for concurrent queries against a single IP address
+- Possibly look for more than one IMID per IP address
+- Maybe dump into SQLite database instead of keeping it in memory
