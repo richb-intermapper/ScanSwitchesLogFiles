@@ -40,7 +40,17 @@ syssvclookup = {
     '78': "Host (78)"
 }
 
-gLineNumber = 1                             # line number of each (concatenated) line being processed
+gLineNumber = 0                             # line number of each (concatenated) line being processed
+
+
+def getLogLine(f):
+    '''
+    Get the next line from the input log file.
+    Increment the global line counter
+    '''
+    global gLineNumber
+    gLineNumber += 1
+    return f.readline()
 
 def processOpentable(line):
     pos = line.find('id=')
@@ -136,8 +146,6 @@ def printTables(fo):
 
 
 def processLine(line):
-    global gLineNumber
-    gLineNumber += 1
     if 'KALI: <' in line:
         line = line.replace(">"," >")
         if '<KC_opentable' in line:
@@ -167,9 +175,12 @@ def main(argv=None):
 
     # Now to the meat of the program
 
-    prevline = f.readline()                         # read the first line
+    prevline = getLogLine(f)                        # read the first line
 
-    for line in f.readlines():                      # read the next line
+    while True:
+        line = getLogLine(f)                        # read the next line
+        if line == "":
+            break                                   # an empty line signals EOF
         if line[0:1] == " " or line[0:1] == "\t":   # if it begins with white space
             prevline = prevline[:-1]                # chop off the \n from prevline
             prevline += " " + line.strip() + "\n"   # add a space char, tack on new line, and add back \n

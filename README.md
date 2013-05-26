@@ -4,17 +4,17 @@ This program scans InterMapper Layer2 log files to give a view of what occurred.
 
 The Layer2 discovery process is a series of SNMP table walks for each device. The L2 code asks for the following tables in sequence:
 
- * dot1d_Info
- * ifTable
- * ipAddrTable
- * dot1dBasePortTable_csi
- * dot1dstp_Info_csi
- * dot1dStpPortTable_csi
- * cdpCacheTable
- * lldpRemManAddrTable
- * lldpRemTable
+* dot1d_Info
+* ifTable
+* ipAddrTable
+* dot1dBasePortTable_csi
+* dot1dstp_Info_csi
+* dot1dStpPortTable_csi
+* cdpCacheTable
+* lldpRemManAddrTable
+* lldpRemTable
  
- The scanl2logs.py program collates all the information about these requests to create the output file (CSV) that looks like this:
+The scanl2logs.py program collates all the information about these requests to create a CSV output file that looks like this:
 
 ```
 Reading switches.log, /Users/richb/Documents/SwitchesLogFiles/switches.log
@@ -42,17 +42,19 @@ Start Time, End Time, Start Line, End Line, IMID, HexIP, KCid, TableID, IP, Labe
 
 * The first line gives the path and file name of the file being scanned.
 * The second line is a list of the headings for the CSV columns
-	* Start Time and End Time show the beginning and end time stamps required to collect this table's data
-	* Start Line and End Line are the line numbers of the file that show the line for the start of the table data, and the final line for it.
+* Subsequent lines have this form:
+	* Start Time and End Time show the beginning and end time stamps required to collect this table's data. Blank if no closing line for the table appeared.
+	* Start Line and End Line are the line numbers of the file that show the line for the start of the table data, and the final line for it. "-" for if no closing line for the table appeared.
 	* IMID is the InterMapper IMID for the device
 	* HexIP is the hexadecimal value of the IP address (*)
 	* KCid is the Kali protocol ID that ties together the <KC_opentable command and its resulting <KR response
 	* TableID tags each of the <KU_tabledata lines that have an entry for this table
 	* IP is the dotted-quad IP address (derived to the HexIP) (*)
 	* Label is the first line of the icon's Label (*)
+	* SysSvc is the value of the sysSerivces.0 for the particular device.
 	* TableName is the name of the table being fetched
 	* Rows is the number of rows returned for the table
-	* Diag contains diagnostic info, if any
+	* Diag contains diagnostic info, if any (see KCid 247 for an example)
 	
 (*) NB: the fields labelled with an asterisk have been retrieved from an SQL command inserting the data into the database
 	
