@@ -40,26 +40,31 @@ syssvclookup = {
     '78': "Host (78)"
 }
 
-labeldict.setdefault("-")
-adrsdict.setdefault("-")
-syssvcdict.setdefault("?")
-syssvclookup.setdefault("-")
+gLineNumber = 1                             # line number of each (concatenated) line being processed
 
 def processOpentable(line):
     pos = line.find('id=')
     line = line.replace("id=","kcid=")      # change "id" to "kcid" on <KC_opentable
-    t = line[0:24]
+    t = line[0:19]
     kvs = {k:v.strip("'") for k,v in re.findall(r'(\S+)=(".*?"|\S+)', line)}
 
-    tbl = {}
+    tbl = {}                            # fill in all possible fields
     tbl['startTime'] = t
+    tbl['endTime'] = "                   "  # 19 spaces
+    tbl['startLine'] = gLineNumber
+    tbl['endLine'] = "-"
     tbl['imid'] = kvs['target']
     tbl['kcid'] = kvs['kcid']
-    tbl['tableid'] = "-"
-    tbl['endTime'] = "                        " # 24 spaces
     tbl['tableName'] = '-'
+    tbl['tableid'] = "-"
     tbl['rows'] = 0
     tablelist.append(tbl)
+
+    # ensure IMID is in other data structures
+    imid = kvs['target']
+    labeldict.setdefault(imid, "-")
+    syssvcdict.setdefault(imid, "")
+    adrsdict.setdefault(imid, "0")
 
 
 def processKR(line):
@@ -76,7 +81,7 @@ def processKR(line):
 
 
 def processTableData(line):
-    t = line[0:24]                          # get the time stamp from the line
+    t = line[0:19]                          # get the time stamp from the line
     kvs = {k:v.strip("'") for k,v in re.findall(r'(\S+)=(".*?"|\S+)', line)}
 
     for l in tablelist:
@@ -84,6 +89,7 @@ def processTableData(line):
             if 'ParseError' in line:        # 'ParseError' indicates this is the last line of the table
                 l['tableid'] += '+'         # mark it so it no longer matches
                 l['endTime'] = t            # save the end time
+                l['endLine'] = gLineNumber
             else:
                 l['rows'] += 1              # otherwise, bump the row count
             break                           # and exit
@@ -97,9 +103,7 @@ def processSQLline(line):
     label = ary[1].strip("' ")
     ip = ary[2].strip("'x ")
     svcs = ary[6].strip("' ")
-    svc = str(svcs)
-    if svcs in syssvclookup:
-        svc = syssvclookup[svcs]
+    svc = syssvclookup.get(svcs, str(svcs))
 
     syssvcdict[imid] = svc
     labeldict[imid] = label
@@ -107,24 +111,20 @@ def processSQLline(line):
 
 
 def printTables(fo):
-    fo.write("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % ("Start", "End", "IMID", "HexIP", "KCid", "TableID", "IP", "Label", "SysSvc", "TableName", "Rows", "Diag"))
+    fo.write("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % ("Start Time", "End Time", "Start Line", "End Line","IMID", "HexIP", "KCid", "TableID", "IP", "Label", "SysSvc", "TableName", "Rows", "Diag"))
     for l in tablelist:
         st = l['startTime']
         et = l['endTime']
+        sl = l['startLine']
+        el = l['endLine']
         imid = l['imid']
         kcid = l['kcid']
         tn = l['tableName']
         tid = l['tableid']
         r = l['rows']
-        lbl = "-"
-        if imid in labeldict:
-            lbl = labeldict[imid]
-        hexip = "00"
-        svc = "?"
-        if imid in syssvcdict:
-            svc = syssvcdict[imid]
-        if imid in adrsdict:
-            hexip = adrsdict[imid]
+        lbl = labeldict[imid]
+        svc = syssvcdict[imid]
+        hexip = adrsdict[imid]
         addr_long = int(hexip,16)
         ip = socket.inet_ntoa(struct.pack(">L", addr_long))
         diag = ""
@@ -132,10 +132,12 @@ def printTables(fo):
             diag += "Never received matching 'KR'; "
         if not "+" in tid and r != 0:
             diag += "Never received end of table data; "
-        fo.write("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % (st, et, imid, hexip, kcid, tid, ip, lbl, svc, tn, r, diag))
+        fo.write(" %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % (st, et, sl, el, imid, hexip, kcid, tid, ip, lbl, svc, tn, r, diag))
 
 
 def processLine(line):
+    global gLineNumber
+    gLineNumber += 1
     if 'KALI: <' in line:
         line = line.replace(">"," >")
         if '<KC_opentable' in line:
