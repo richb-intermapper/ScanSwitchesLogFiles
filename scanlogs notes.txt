@@ -38,3 +38,62 @@ To Do:
 - Possibly look for concurrent queries against a single IP address
 - Possibly look for more than one IMID per IP address
 - Maybe dump into SQLite database instead of keeping it in memory
+- Handle multiple scans in a single log file
+
+Other odd messages to scan for:
+
+2013-05-14 07:43:26-0700 [PoolThread-158713100-2] dispatchConnectSwitchesRequest: Automatic connections disabled because analyze.status = 2
+
+Multiple scans have this between them:
+
+--- start of multiple scan separator ---
+2013-05-14 07:43:52-0700 [MainThread] PERF 6 ms: ENDPOINTS_REQUEST  source=127.0.0.1:49307 id=6 flags=0 length=289  6c696d6974013130... (289)
+2013-05-14 07:43:57-0700 [MainThread] CMD RECV: ENDPOINTS_REQUEST  source=127.0.0.1:49307 id=7 flags=0 length=283  6c696d6974013130... (283)
+2013-05-14 07:43:57-0700 [MainThread] CMD DLProtocolFactory: ENDPOINTS_REQUEST  source=127.0.0.1:49307 id=7 flags=0 length=283  6c696d6974013130... (283)
+2013-05-14 07:43:57-0700 [PoolThread-158713100-2] CMD ENTER: ENDPOINTS_REQUEST  source=127.0.0.1:49307 id=7 flags=0 length=283  6c696d6974013130... (283)
+2013-05-14 07:43:57-0700 [PoolThread-158713100-2] Debug: #erase
+2013-05-14 07:43:57-0700 [MainThread] CONN: Closed connection from IPv4Address(TCP, '127.0.0.1', 8181)
+2013-05-14 07:43:57-0700 [MainThread] CONN: Connection lost to IPv4Address(TCP, '127.0.0.1', 8181) [None.]
+2013-05-14 07:43:57-0700 [MainThread] <twisted.internet.ssl.Connector instance at 0x9add0cc> will retry in 2 seconds
+2013-05-14 07:43:57-0700 [MainThread] Stopping factory <protocol.DLKaliProtocolFactory.DLKaliProtocolFactory instance at 0x9ad6a4c>
+2013-05-14 07:43:57-0700 [PoolThread-158713100-2] CMD EXIT: ENDPOINTS_REQUEST  source=127.0.0.1:49307 id=7 flags=0 length=283  6c696d6974013130... (283)
+2013-05-14 07:43:57-0700 [MainThread] Close database: /var/local/InterMapper_Settings/Extensions/com.dartware.switches/switches.sqlite3
+2013-05-14 07:44:00-0700 [MainThread] Connect to database: /var/local/InterMapper_Settings/Extensions/com.dartware.switches/switches.sqlite3 (SQLite 3.7.3, pysqlite 2.6.0)
+2013-05-14 07:44:00-0700 [MainThread]   quick_check: ok
+2013-05-14 07:44:00-0700 [MainThread]   compile_options: ENABLE_FTS3
+2013-05-14 07:44:00-0700 [MainThread]   compile_options: ENABLE_RTREE
+2013-05-14 07:44:00-0700 [MainThread]   compile_options: TEMP_STORE=1
+2013-05-14 07:44:00-0700 [MainThread]   compile_options: THREADSAFE=1
+2013-05-14 07:44:00-0700 [MainThread]   legacy_file_format: 0
+2013-05-14 07:44:00-0700 [MainThread]   encoding: UTF-8
+2013-05-14 07:44:00-0700 [MainThread]   page_size: 1024
+2013-05-14 07:44:00-0700 [MainThread]   page_count: 1
+2013-05-14 07:44:00-0700 [MainThread]   cache_size: 4000
+2013-05-14 07:44:00-0700 [MainThread]   freelist_count: 0
+2013-05-14 07:44:00-0700 [MainThread]   journal_mode: wal
+2013-05-14 07:44:00-0700 [MainThread]   wal_autocheckpoint: 1000
+2013-05-14 07:44:00-0700 [MainThread]   auto_vacuum: 0
+2013-05-14 07:44:00-0700 [MainThread] Creating database tables for schema 14.4
+2013-05-14 07:44:01-0700 [MainThread] CMD SEND: ENDPOINTS_RESPONSE  source=127.0.0.1:49307 id=7 flags=0 length=39  5f6c69737401656e... (39)
+2013-05-14 07:44:01-0700 [MainThread] DETAIL:
+	('_list', 'endpoints')
+	('.msg',)
+	('Database erased.',)
+	()
+2013-05-14 07:44:01-0700 [MainThread] PERF 3647 ms: ENDPOINTS_REQUEST  source=127.0.0.1:49307 id=7 flags=0 length=283  6c696d6974013130... (283)
+2013-05-14 07:44:01-0700 [MainThread] Starting factory <protocol.DLKaliProtocolFactory.DLKaliProtocolFactory instance at 0x9ad6a4c>
+2013-05-14 07:44:01-0700 [MainThread] CONN: Started connecting to IPv4Address(TCP, '127.0.0.1', 8181)
+2013-05-14 07:44:01-0700 [MainThread] CONN: Connected to IPv4Address(TCP, '127.0.0.1', 8181)
+2013-05-14 07:44:01-0700 [MainThread] KALI: <KC_login id='1' auth='ANONYMOUS'></KC_login>
+2013-05-14 07:44:01-0700 [MainThread] KALI: KU_propertychange ignored
+2013-05-14 07:44:01-0700 [MainThread] KALI: <KU_propertychange property='pref.info.im.registration.licenses'></KU_propertychange>
+2013-05-14 07:44:01-0700 [MainThread] KALI: <KU_alert buttons='OK,' imml='true' title='Test Notice for "intermapper"'>\G\This is a \B\TEST\P\ version of InterMapper 5.6.8.  This version will stop working on \B1\Fri, May 31, 2013\P0\.
+
+	You're currently monitoring \B\84 devices\P\ of the licensed \B\Unlimited\P\ maximum.
+
+	Please report any bugs, suggestions, or other concerns you have with this software to \U2=mailto:intermapper@dartware.com\InterMapper@dartware.com\P0\.  Thank you for your support.</KU_alert>
+2013-05-14 07:44:01-0700 [MainThread] KALI: <KR id='1' response='201'>Admin</KR>
+2013-05-14 07:44:01-0700 [MainThread] CONN: Logged in to IPv4Address(TCP, '127.0.0.1', 8181)
+2013-05-14 07:44:01-0700 [MainThread] KALI: <KC_setproperty name='clientid' id='2'>*switches</KC_setproperty>
+2013-05-14 07:44:01-0700 [MainThread] KALI: <KC_openmaplist user='Admin' id='3'></KC_openmaplist>
+--- end of multiple scan separator ---

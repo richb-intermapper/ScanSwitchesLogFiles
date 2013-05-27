@@ -200,27 +200,13 @@ def main(argv=None):
     except Exception, err:
         return str(err)
 
-    f = theArgs.infile
+    f = theArgs.infile                      # the argument parsing returns open file objects
     fo = theArgs.outfile
-    # f = open('switches.log', 'r')
-    # fo = open('switches.csv', 'w')
 
     # Now to the meat of the program
 
-    # prevline = f.readline()                        # read the first line
-    #
-    # for line in f.readlines():
-    #     if line[0:1] == " " or line[0:1] == "\t":   # if it begins with white space
-    #         prevline = prevline[:-1]                # chop off the \n from prevline
-    #         prevline += " " + line.strip() + "\n"   # add a space char, tack on new line, and add back \n
-    #     else:
-    #         processLine(prevline)                   # process a completed line
-    #         prevline = line                         # and save the current line for further processing
-    #
-    # processLine(prevline)                           # finally, process this last line
-
     global thelog
-    thelog = L2Log(f)
+    thelog = L2Log(f)                       # initialize the file object
 
     while True:
         line = thelog.getline()
@@ -230,7 +216,7 @@ def main(argv=None):
 
     fo.write("Reading switches.log, %s\n" % os.path.abspath(f.name))
 
-    printTables(fo)                                 # print the relevant information
+    printTables(fo)                         # print the relevant information
 
 if __name__ == "__main__":
     sys.exit(main())

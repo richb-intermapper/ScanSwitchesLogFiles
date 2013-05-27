@@ -1,8 +1,8 @@
-#ScanL2Logs.py
+##ScanL2Logs.py
 
 This program scans InterMapper Layer2 log files to give a view of what occurred.
 
-The Layer2 discovery process is a series of SNMP table walks for each device. The L2 code asks for the following tables in sequence:
+The Layer2 discovery process is a series of SNMP table walks for each device. The L2 code asks the InterMapper server for the following tables in sequence, then records the Kali protocol commands in the log file.
 
 * dot1d_Info
 * ifTable
@@ -13,8 +13,15 @@ The Layer2 discovery process is a series of SNMP table walks for each device. Th
 * cdpCacheTable
 * lldpRemManAddrTable
 * lldpRemTable
- 
-The scanl2logs.py program collates all the information about these requests to create a CSV output file that looks like this:
+
+As scanlogs.py reads the input file it detects:
+
+SQL "INSERT INTO device" lines that contain data about the IMID, the IP address, name/label, and sysSvcs for all "pollers"
+<KC_opentable lines that contain an IMID for a device and the KCid to link it to the following "<KR"
+<KR with a matching KCid that also contains a "table id" and a tableTitle (ifIndex, ifAddrTable, etc.)
+<KU_tabledata lines with the same "table ID" to data, or to a "ParseError" or "NoAnswer" to indicate that it's the last line.
+
+scanl2logs.py collates all the information about these requests to create a CSV output file that looks like this:
 
 ```
 Reading switches.log, /Users/richb/Documents/SwitchesLogFiles/switches.log
@@ -45,20 +52,21 @@ Start Time, End Time, Start Line, End Line, IMID, HexIP, KCid, TableID, IP, Labe
 * Subsequent lines have this form:
 	* Start Time and End Time show the beginning and end time stamps required to collect this table's data. Blank if no closing line for the table appeared.
 	* Start Line and End Line are the line numbers of the file that show the line for the start of the table data, and the final line for it. "-" for if no closing line for the table appeared.
-	* IMID is the InterMapper IMID for the device
+	* IMID is the InterMapper IMID for the device.
 	* HexIP is the hexadecimal value of the IP address (*)
-	* KCid is the Kali protocol ID that ties together the <KC_opentable command and its resulting <KR response
-	* TableID tags each of the <KU_tabledata lines that have an entry for this table
+	* KCid is the Kali protocol ID that ties together the <KC_opentable command and its resulting <KR response.
+	* TableID tags each of the <KU_tabledata lines that have an entry for this table. The <KR response contains this TableID.
 	* IP is the dotted-quad IP address (derived to the HexIP) (*)
 	* Label is the first line of the icon's Label (*)
-	* SysSvc is the value of the sysSerivces.0 for the particular device.
-	* TableName is the name of the table being fetched
-	* Rows is the number of rows returned for the table
-	* Diag contains diagnostic info, if any (see KCid 247 for an example)
+	* SysSvc is the value of the sysSerivces.0 for the particular device. (*)
+	* TableName is the name of the table being fetched.
+	* Rows is the number of rows returned for the table.
+	* Diag contains diagnostic info, if any. (See KCid 247 for an example)
 	
-(*) NB: the fields labelled with an asterisk have been retrieved from an SQL command inserting the data into the database
+(*) NB: the fields labelled with an asterisk have been retrieved from an SQL command inserting the data into the database.
 	
 There are several additional flags in the columns of the CSV data:
 
 * KCid is created when the log file contains a <KC_opentable; the KCid gets a "+" appended when the corresponding <KR appears.
 * TableID holds the id=... for the table (set in the <KR response) for all related table entries. TableID gets a "+" appended when a "ParseError" appears, indicating the end of that table.
+* TableID column also gets marked with a "*" to indicate that a "NoAnswer" appeared, this is tagged with a note in the Diag column, too.
