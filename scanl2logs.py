@@ -9,10 +9,10 @@ There are four important pieces of information garnered from the file.
 They require that log.kali and log.sql both be true before beginning the scan
 As scanlogs.py reads the input file it detects:
 
-SQL "INSERT INTO device" lines contain data about the IMID, the IP address, name/label, and sysSvcs for all "pollers"
+SQL "INSERT INTO device" lines that contain data about the IMID, the IP address, name/label, and sysSvcs for all "pollers"
 <KC_opentable lines that contain an IMID for a device and the KCid to link it to the following "<KR"
 <KR with a matching KCid that also contains a "table id" and a tableTitle (ifIndex, ifAddrTable, etc.)
-<KU_tabledata lines with the same "table ID" to data, or to a "ParseError" to indicate that it's the last line.
+<KU_tabledata lines with the same "table ID" to data, or to a "ParseError" or "NoAnswer" to indicate that it's the last line.
 
 '''
 
@@ -40,17 +40,41 @@ syssvclookup = {
     '78': "Host (78)"
 }
 
-gLineNumber = 0                             # line number of each (concatenated) line being processed
+thelog = None                               # Global
 
+class L2Log:
+    '''
+    Class to return a line from the log file. Concatenates lines that begin with white space,
+        and keeps track of the "real" line number (e.g., the first)
+    '''
 
-def getLogLine(f):
-    '''
-    Get the next line from the input log file.
-    Increment the global line counter
-    '''
-    global gLineNumber
-    gLineNumber += 1
-    return f.readline()
+    def __init__(self, thefile):
+        self.thefile = thefile
+        self.linect = 1
+        self.prevline = thefile.readline()                          # prevline and prevlinenum go together to remember the
+        self.prevlinenum = 0                                        #    line and its starting line number
+        self.linenum = 0                                            # linenum is the number of the most-recently-returned line
+
+    def getline(self):                                              # return the next (processed) line from the file
+        while True:
+            line = self.thefile.readline()                          # read the next line
+            if line == "":                                          # Is this EOF?
+                retline = self.prevline                             #   then simply return the previous line
+                self.prevline = ""
+                break
+            else:                                                   # got a new line
+                self.linect += 1                                    # bump line number within file
+                if line[0:1] == " " or line[0:1] == "\t":           # if it begins with white space
+                    self.prevline = self.prevline[:-1]              # chop off the \n from previous line
+                    self.prevline += " " + line.strip() + "\n"      # add a space char, tack on new line, and add back \n
+                else:
+                    retline = self.prevline                         # got a completed line; prepare to return it
+                    self.linenum = self.prevlinenum                 #    and remember its line number for the world
+                    self.prevline = line                            # Save this new line for next time
+                    self.prevlinenum = self.linect                  #    and remember its line number
+                    break
+        return retline                                          # finally, hand it back for processing
+
 
 def processOpentable(line):
     pos = line.find('id=')
@@ -61,7 +85,7 @@ def processOpentable(line):
     tbl = {}                            # fill in all possible fields
     tbl['startTime'] = t
     tbl['endTime'] = "                   "  # 19 spaces
-    tbl['startLine'] = gLineNumber
+    tbl['startLine'] = thelog.linenum
     tbl['endLine'] = "-"
     tbl['imid'] = kvs['target']
     tbl['kcid'] = kvs['kcid']
@@ -80,6 +104,8 @@ def processOpentable(line):
 def processKR(line):
     line = line.replace('KR id','KR kcid')   # change "id" to "kcid" on <KR id...
     kvs = {k:v.strip("'") for k,v in re.findall(r'(\S+)=(".*?"|\S+)', line)}
+    if kvs['kcid'] == "359":
+        pass
 
     for l in tablelist:
         if l['kcid'] == kvs['kcid']:
@@ -99,7 +125,11 @@ def processTableData(line):
             if 'ParseError' in line:        # 'ParseError' indicates this is the last line of the table
                 l['tableid'] += '+'         # mark it so it no longer matches
                 l['endTime'] = t            # save the end time
-                l['endLine'] = gLineNumber
+                l['endLine'] = thelog.linenum
+            elif 'NoAnswer' in line:        # 'NoAnswer' is also the end, but didn't get response from device
+                l['tableid'] += "*"         # flag with a different character to make it stand out
+                l['endTime'] = t            # save the end time
+                l['endLine'] = thelog.linenum
             else:
                 l['rows'] += 1              # otherwise, bump the row count
             break                           # and exit
@@ -140,7 +170,9 @@ def printTables(fo):
         diag = ""
         if not "+" in kcid:
             diag += "Never received matching 'KR'; "
-        if not "+" in tid and r != 0:
+        if "*" in tid:
+            diag += "Received NoAnswer; "
+        elif not "+" in tid and r != 0:
             diag += "Never received end of table data; "
         fo.write(" %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % (st, et, sl, el, imid, hexip, kcid, tid, ip, lbl, svc, tn, r, diag))
 
@@ -175,20 +207,26 @@ def main(argv=None):
 
     # Now to the meat of the program
 
-    prevline = getLogLine(f)                        # read the first line
+    # prevline = f.readline()                        # read the first line
+    #
+    # for line in f.readlines():
+    #     if line[0:1] == " " or line[0:1] == "\t":   # if it begins with white space
+    #         prevline = prevline[:-1]                # chop off the \n from prevline
+    #         prevline += " " + line.strip() + "\n"   # add a space char, tack on new line, and add back \n
+    #     else:
+    #         processLine(prevline)                   # process a completed line
+    #         prevline = line                         # and save the current line for further processing
+    #
+    # processLine(prevline)                           # finally, process this last line
+
+    global thelog
+    thelog = L2Log(f)
 
     while True:
-        line = getLogLine(f)                        # read the next line
+        line = thelog.getline()
         if line == "":
-            break                                   # an empty line signals EOF
-        if line[0:1] == " " or line[0:1] == "\t":   # if it begins with white space
-            prevline = prevline[:-1]                # chop off the \n from prevline
-            prevline += " " + line.strip() + "\n"   # add a space char, tack on new line, and add back \n
-        else:
-            processLine(prevline)                   # process a completed line
-            prevline = line                         # and save the current line for further processing
-
-    processLine(prevline)                           # finally, process this last line
+            break
+        processLine(line)
 
     fo.write("Reading switches.log, %s\n" % os.path.abspath(f.name))
 
