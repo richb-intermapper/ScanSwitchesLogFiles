@@ -56,6 +56,7 @@ class L2Log:
         self.linenum = 0                                            # linenum is the number of the most-recently-returned line
 
     def getline(self):                                              # return the next (processed) line from the file
+        retline = ""
         while True:
             line = self.thefile.readline()                          # read the next line
             if line == "":                                          # Is this EOF?
@@ -104,7 +105,7 @@ def processOpentable(line):
 def processKR(line):
     line = line.replace('KR id','KR kcid')   # change "id" to "kcid" on <KR id...
     kvs = {k:v.strip("'") for k,v in re.findall(r'(\S+)=(".*?"|\S+)', line)}
-    if kvs['kcid'] == "359":
+    if kvs['kcid'] == "274":
         pass
 
     for l in tablelist:
@@ -126,6 +127,10 @@ def processTableData(line):
                 l['tableid'] += '+'         # mark it so it no longer matches
                 l['endTime'] = t            # save the end time
                 l['endLine'] = thelog.linenum
+            elif 'EndOfMIB' in line:        # 'EndOfMIB' is also the end
+                l['tableid'] += "/"         # flag with a different character to make it stand out
+                l['endTime'] = t            # save the end time
+                l['endLine'] = thelog.linenum
             elif 'NoAnswer' in line:        # 'NoAnswer' is also the end, but didn't get response from device
                 l['tableid'] += "*"         # flag with a different character to make it stand out
                 l['endTime'] = t            # save the end time
@@ -133,6 +138,7 @@ def processTableData(line):
             else:
                 l['rows'] += 1              # otherwise, bump the row count
             break                           # and exit
+    pass
 
 
 def processSQLline(line):
