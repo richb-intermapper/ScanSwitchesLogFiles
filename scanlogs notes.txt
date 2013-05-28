@@ -97,3 +97,12 @@ Multiple scans have this between them:
 2013-05-14 07:44:01-0700 [MainThread] KALI: <KC_setproperty name='clientid' id='2'>*switches</KC_setproperty>
 2013-05-14 07:44:01-0700 [MainThread] KALI: <KC_openmaplist user='Admin' id='3'></KC_openmaplist>
 --- end of multiple scan separator ---
+
+AL's entire switches.log file contains two scans, with these markers:
+19866: 2013-05-14 07:43:24-0700 [PoolThread-158713100-2] SQL #-1: ANALYZE;
+43685: 2013-05-14 07:45:37-0700 [PoolThread-4119417964-5] SQL #-1: ANALYZE;
+
+24217: 2013-05-14 07:43:57-0700 [PoolThread-158713100-2] Debug: #erase
+
+24610: 2013-05-14 07:45:22-0700 [MainThread] SCHEDULE: Run scheduled task now
+24614: 2013-05-14 07:43:09-0700 [PoolThread-158713100-1] CMD ENTER: SET_DEVICES_REQUEST  source=None id=-1 flags=0 length=5123  5f6c697374016465... (5123)
