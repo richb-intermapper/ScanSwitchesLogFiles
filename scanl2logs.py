@@ -123,16 +123,8 @@ def processTableData(line):
 
     for l in tablelist:
         if l['tableid'] == kvs['id']:       # found matching table entry
-            if 'ParseError' in line:        # 'ParseError' indicates this is the last line of the table
-                l['tableid'] += '+'         # mark it so it no longer matches
-                l['endTime'] = t            # save the end time
-                l['endLine'] = thelog.linenum
-            elif 'EndOfMIB' in line:        # 'EndOfMIB' is also the end
-                l['tableid'] += "/"         # flag with a different character to make it stand out
-                l['endTime'] = t            # save the end time
-                l['endLine'] = thelog.linenum
-            elif 'NoAnswer' in line:        # 'NoAnswer' is also the end, but didn't get response from device
-                l['tableid'] += "*"         # flag with a different character to make it stand out
+            if 'done' in kvs:
+                l['tableid'] += " "+kvs['done'] # mark it so it no longer matches
                 l['endTime'] = t            # save the end time
                 l['endLine'] = thelog.linenum
             else:
@@ -176,9 +168,9 @@ def printTables(fo):
         diag = ""
         if not "+" in kcid:
             diag += "Never received matching 'KR'; "
-        if "*" in tid:
+        if "No" in tid:
             diag += "Received NoAnswer; "
-        elif not "+" in tid and r != 0:
+        elif not "Pa" in tid and r != 0:
             diag += "Never received end of table data; "
         fo.write(" %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % (st, et, sl, el, imid, hexip, kcid, tid, ip, lbl, svc, tn, r, diag))
 
