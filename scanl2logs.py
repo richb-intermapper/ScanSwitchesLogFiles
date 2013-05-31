@@ -4,7 +4,6 @@ Scan a switches.log file to prepare a history of the InterMapper Layer2 scan/har
 The program is a filter - it reads stdin and writes to stdout.
 These can be overridden by -i and -o arguments.
 
-
 There are four important pieces of information garnered from the file.
 They require that log.kali and log.sql both be true before beginning the scan
 As scanlogs.py reads the input file it detects:
@@ -14,6 +13,7 @@ SQL "INSERT INTO device" lines that contain data about the IMID, the IP address,
 <KR with a matching KCid that also contains a "table id" and a tableTitle (ifIndex, ifAddrTable, etc.)
 <KU_tabledata lines with the same "table ID" to data, or to a "ParseError" or "NoAnswer" to indicate that it's the last line.
 
+In addition, scanl2logs creates a history of interesting commands that are printed to show what happened.
 '''
 
 import os
@@ -27,8 +27,6 @@ tablelist = []                              # a list of dictionaries - one for e
 labeldict = {}                              # names (actually icon labels), indexed by imid
 adrsdict = {}                               # IP addresses, indexed by imid
 syssvcdict = {}                             # and the system services
-stepdev = 0
-totaldev = 0
 
 syssvclookup = {
     '1': "Hub",
@@ -49,14 +47,11 @@ def initGlobals():
     '''
     Clear out all the global variables so they can be used for next harvest
     '''
-    global tablelist, labeldict, adrsdict, syssvcdict, gLineBuffer, stepdev, totaldev
+    global tablelist, labeldict, adrsdict, syssvcdict
     tablelist = []                              # a list of dictionaries - one for each table (9 tables/poller)
     labeldict = {}                              # names (actually icon labels), indexed by imid
     adrsdict = {}                               # IP addresses, indexed by imid
     syssvcdict = {}                             # and the system services
-    gLineBuffer = ""
-    stepdev = 0
-    totaldev = 0
 
 class L2Log:
     '''
@@ -86,14 +81,14 @@ class L2Log:
                 else:
                     break                                           # we have a line (prevline) to return
 
-        retline = self.prevline                         # got a completed line; prepare to return it
+        retline = self.prevline                                     # got a completed line; prepare to return it
         if retline != "":
             retline += "\n"
         self.linenum = self.prevlinenum
         self.prevline = line
         self.prevlinenum = self.linect
 
-        return retline                                              # finally, hand it back with a line ending
+        return retline
 
 
 def processOpentable(line):
@@ -201,58 +196,79 @@ class HistoryBuffer():
     Collect lines of interest into a global buffer for displaying as history
     '''
     def __init__(self):
+        self.clearHistory()
+
+    def clearHistory(self):
         self.gLineBuffer = ""
         self.reason = ""
         self.prevtail = ""
+        self.prevtime = ""                  # end of the duplicates - remembered each time we ignore one
         self.dupcount = 0
+        self.stepdev = 0
+        self.totaldev = 0
 
 
-    def addTogLineBuffer(self, reason, line):
+    def logit(self, line):
+        '''
+        Examine each line to see if it should be entered into the history buffer
+        '''
+        reason = ""
+        data = line
+        if "Debug: #erase" in line:
+            reason = "Erasing database:"
+        elif "ALGORITHM" in line:
+            if "computeSimpleConnection" not in line and "computeSwitchIntersection" not in line:
+                reason = "Analyzing collected data:"
+        elif "ANALYZE" in line:
+            reason = "Starting analysis of collected data:"
+        elif "id='1'" in line:
+            reason = "Restarting transaction sequence:"
+        elif "<KC_export type='direct' name='devices.csv'" in line:
+            reason = "Requesting poller list:"
+        elif "CMD RECV: ABORT_POLL_REQUEST" in line:
+            reason = "Aborting previous action:"
+        elif "CMD RECV: POLL_NOW_REQUEST" in line:
+            reason = "Manually start poll:"
+        elif "<KC_opentable" in line:
+            reason = "Scanning tables:"
+            data = line[0:24]+" [MainThread] KALI: Issuing <KC_opentable commands...\n"
+        elif " DETAIL:" in line:
+            kvs = {k:v.strip("'") for k,v in re.findall(r"\('(\S+)', ('.*?')\)", line)}
+            if  "'phase'" in line:
+                self.stepdev = kvs['step']          # simply record our progress for use in subsequent report lines
+                self.totaldev = kvs['total']
+                reason = ""                         # but don't log the info
+            # elif "'_list', 'endpoints'" in line:
+            #     self.addTogLineBuffer("Sending endpoints to GUI:", line)
+            # elif "'_list', 'switch_to_switch'" in line:
+            #     self.addTogLineBuffer("Sending switch-to-switch to GUI:", line)
+        elif "EXCEPTION" in line:
+            if "COMMAND_INVALID_PARAM" not in line: # ignore bad typing from customer in filter field
+                reason = "Exception:"
+        if reason != "":                            # no reason - don't log it
+            self.addToBuffer(reason, data)
+
+
+    def addToBuffer(self, reason, line):
         l = line.replace(",","")
         tail = l[25:]
         if tail == self.prevtail:
             self.dupcount += 1
+            self.prevtime = l[0:19]
         else:
             if self.dupcount != 0:              # if there were duplicated lines...
-                self.gLineBuffer += " %s, %s, %s, %d times\n" %(l[0:19], self.reason, "repeated", self.dupcount )
-            self.gLineBuffer += " %s, %s, %s, %s of %s, %s" %(l[0:19], reason, thelog.linenum, stepdev, totaldev , tail )
+                self.gLineBuffer += " %s, %s, repeated %d times, until %s\n" %(l[0:19], self.reason, self.dupcount, self.prevtime )
+            self.gLineBuffer += " %s, %s, %s, %s of %s, %s" %(l[0:19], reason, thelog.linenum, self.stepdev, self.totaldev , tail )
             self.reason = reason
             self.prevtail = tail
+            self.prevtime = line[0:19]
             self.dupcount = 0
 
 def processLine(line):
-    global gLineBuffer, stepdev, totaldev
-    if "Debug: #erase" in line:
-        theHistory.addTogLineBuffer("Erasing database:", line)
-    elif "ALGORITHM" in line:
-        if "computeSimpleConnection" not in line and "computeSwitchIntersection" not in line:
-            theHistory.addTogLineBuffer("Processing data:", line)
-    elif "ANALYZE" in line:
-        theHistory.addTogLineBuffer("Starting analysis of collected data:", line)
-    elif "id='1'" in line:
-        theHistory.addTogLineBuffer("Restarting transaction sequence:", line)
-    elif "<KC_export type='direct' name='devices.csv'" in line:
-        theHistory.addTogLineBuffer("Requesting poller list:", line)
-    elif "CMD RECV: ABORT_POLL_REQUEST" in line:
-        theHistory.addTogLineBuffer("Aborting previous action:", line)
-    elif "CMD RECV: POLL_NOW_REQUEST" in line:
-        theHistory.addTogLineBuffer("Manually start poll:", line)
-    elif "<KC_opentable" in line:
-        theHistory.addTogLineBuffer("Scanning tables:", line[0:24]+" [MainThread] KALI: Issuing <KC_opentable commands...\n")
-    elif " DETAIL:" in line:
-        kvs = {k:v.strip("'") for k,v in re.findall(r"\('(\S+)', ('.*?')\)", line)}
-        if  "'phase'" in line:
-            stepdev = kvs['step']           # simply record our progress for use in subsequent report lines
-            totaldev = kvs['total']
-        elif "'_list', 'endpoints'" in line:
-            theHistory.addTogLineBuffer("Sending endpoints to GUI:", line)
-        elif "'_list', 'switch_to_switch'" in line:
-                theHistory.addTogLineBuffer("Sending switch-to-switch to GUI:", line)
-    elif "EXCEPTION" in line:
-        if "COMMAND_INVALID_PARAM" not in line:             # ignore bad typing from customer in filter field
-            theHistory.addTogLineBuffer("Exception:", line)
-    #    addTogLineBuffer("Detail:", line)
-
+    '''
+    Process each line of the file, triggering on interesting states/info
+    '''
+    theHistory.logit(line)
     if 'KALI: <' in line:
         line = line.replace(">"," >")
         if '<KC_opentable' in line:
