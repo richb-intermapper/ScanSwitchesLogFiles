@@ -28,6 +28,8 @@ labeldict = {}                              # names (actually icon labels), inde
 adrsdict = {}                               # IP addresses, indexed by imid
 syssvcdict = {}                             # and the system services
 gLineBuffer = ""
+stepdev = 0
+totaldev = 0
 
 syssvclookup = {
     '1': "Hub",
@@ -47,13 +49,14 @@ def initGlobals():
     '''
     Clear out all the global variables so they can be used for next harvest
     '''
-    global tablelist, labeldict, adrsdict, syssvcdict, gLineBuffer
+    global tablelist, labeldict, adrsdict, syssvcdict, gLineBuffer, stepdev, totaldev
     tablelist = []                              # a list of dictionaries - one for each table (9 tables/poller)
     labeldict = {}                              # names (actually icon labels), indexed by imid
     adrsdict = {}                               # IP addresses, indexed by imid
     syssvcdict = {}                             # and the system services
     gLineBuffer = ""
-
+    stepdev = 0
+    totaldev = 0
 
 class L2Log:
     '''
@@ -72,6 +75,8 @@ class L2Log:
         retline = ""
         while True:
             line = self.thefile.readline()                          # read the next line
+            if "DETAIL" in line:
+                pass
             if line == "":                                          # Is this EOF?
                 retline = self.prevline                             #   then simply return the previous line
                 self.prevline = ""
@@ -194,26 +199,37 @@ def addTogLineBuffer(reason, line):
     global gLineBuffer
     l = line.replace(",","")
     tail = l[25:]
-    if len(tail) > 75:
-        tail = tail[:75] + "..."
-    gLineBuffer += " %s, %s,, %s\n" %(l[0:19], reason , tail )
+    # if len(tail) > 100:
+    #     tail = tail[:100] + "...\n"
+    gLineBuffer += " %s, %s,%s of %s, %s" %(l[0:19], reason, stepdev, totaldev , tail )
 
 def processLine(line):
-    global gLineBuffer
+    global gLineBuffer, stepdev, totaldev
     if "#erase" in line:
         addTogLineBuffer("Erasing database:", line)
-    elif "AlGORITHM" in line:
-        addTogLineBuffer("Processing data:", line)
+    elif "ALGORITHM" in line:
+        if "computeSimpleConnection" not in line and "computeSwitchIntersection" not in line:
+            addTogLineBuffer("Processing data:", line)
     elif "ANALYZE" in line:
         addTogLineBuffer("Starting analysis of collected data:", line)
     elif "id='1'" in line:
         addTogLineBuffer("Restarting transaction sequence:", line)
     elif "<KC_export type='direct' name='devices.csv'" in line:
         addTogLineBuffer("Requesting poller list:", line)
-    # elif "DETAIL" in line:
-    #     addTogLineBuffer(line)
-    # elif "'phase'" in line:
-    #     addTogLineBuffer(line)
+    elif "CMD RECV: ABORT_POLL_REQUEST" in line:
+        addTogLineBuffer("Aborting previous action:", line)
+    elif "CMD RECV: POLL_NOW_REQUEST" in line:
+        addTogLineBuffer("Manually start poll:", line)
+    elif " DETAIL:" in line:
+        kvs = {k:v.strip("'") for k,v in re.findall(r"\('(\S+)', ('.*?')\)", line)}
+        if  "'phase'" in line:
+            stepdev = kvs['step']           # simply note our progress
+            totaldev = kvs['total']
+        elif "'_list', 'endpoints'" in line:
+            addTogLineBuffer("Listing endpoints:", line)
+        elif "'_list', 'switch_to_switch'" in line:
+            addTogLineBuffer("Listing switch-to-switch:", line)
+    #    addTogLineBuffer("Detail:", line)
 
     if 'KALI: <' in line:
         line = line.replace(">"," >")
