@@ -27,6 +27,7 @@ tablelist = []                              # a list of dictionaries - one for e
 labeldict = {}                              # names (actually icon labels), indexed by imid
 adrsdict = {}                               # IP addresses, indexed by imid
 syssvcdict = {}                             # and the system services
+gLineBuffer = ""
 
 syssvclookup = {
     '1': "Hub",
@@ -41,6 +42,18 @@ syssvclookup = {
 }
 
 thelog = None                               # Global
+
+def initGlobals():
+    '''
+    Clear out all the global variables so they can be used for next harvest
+    '''
+    global tablelist, labeldict, adrsdict, syssvcdict, gLineBuffer
+    tablelist = []                              # a list of dictionaries - one for each table (9 tables/poller)
+    labeldict = {}                              # names (actually icon labels), indexed by imid
+    adrsdict = {}                               # IP addresses, indexed by imid
+    syssvcdict = {}                             # and the system services
+    gLineBuffer = ""
+
 
 class L2Log:
     '''
@@ -149,6 +162,9 @@ def processSQLline(line):
 
 
 def printTables(fo):
+
+    fo.write(gLineBuffer+"\n")
+    fo.write("Resulting Table Info\n")
     fo.write("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % ("Start Time", "End Time", "Start Line", "End Line","IMID", "HexIP", "KCid", "TableID", "IP", "Label", "SysSvc", "TableName", "Rows", "Diag"))
     for l in tablelist:
         st = l['startTime']
@@ -174,8 +190,31 @@ def printTables(fo):
             diag += "Never received end of table data; "
         fo.write(" %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % (st, et, sl, el, imid, hexip, kcid, tid, ip, lbl, svc, tn, r, diag))
 
+def addTogLineBuffer(reason, line):
+    global gLineBuffer
+    l = line.replace(",","")
+    tail = l[25:]
+    if len(tail) > 75:
+        tail = tail[:75] + "..."
+    gLineBuffer += " %s, %s,, %s\n" %(l[0:19], reason , tail )
 
 def processLine(line):
+    global gLineBuffer
+    if "#erase" in line:
+        addTogLineBuffer("Erasing database:", line)
+    elif "AlGORITHM" in line:
+        addTogLineBuffer("Processing data:", line)
+    elif "ANALYZE" in line:
+        addTogLineBuffer("Starting analysis of collected data:", line)
+    elif "id='1'" in line:
+        addTogLineBuffer("Restarting transaction sequence:", line)
+    elif "<KC_export type='direct' name='devices.csv'" in line:
+        addTogLineBuffer("Requesting poller list:", line)
+    # elif "DETAIL" in line:
+    #     addTogLineBuffer(line)
+    # elif "'phase'" in line:
+    #     addTogLineBuffer(line)
+
     if 'KALI: <' in line:
         line = line.replace(">"," >")
         if '<KC_opentable' in line:
