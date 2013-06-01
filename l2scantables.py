@@ -129,7 +129,7 @@ class L2ScanTables:
             if diag != "":
                 diagline += ", Error during scan:, , , Device %s (%s); table %s:; KCID %s; %s see Table Info below.\n" % (ip, imid, tn, kcid, diag)
             tableline += " %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % (st, et, sl, el, imid, hexip, kcid, tid, ip, lbl, svc, tn, r, diag)
-        return "%s\nTable Info:\n%s\n" % (diagline, tableline)
+        return "%s\nTable Info:\n%s" % (diagline, tableline)
 
     def processLine(self, line):
         '''

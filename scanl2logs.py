@@ -19,6 +19,7 @@ In addition, scanl2logs creates a history of interesting commands that are print
 import os
 import sys
 import argparse
+from time import strftime
 from l2historybuffer import L2HistoryBuffer
 from l2logfile import L2LogFile
 from l2scantables import L2ScanTables
@@ -43,25 +44,28 @@ def main(argv=None):
     theHistory = L2HistoryBuffer(thelog)    # initialize the history of log lines
     theScanInfo = L2ScanTables(thelog)      # initialize the contents of each of the Layer2 table scans
 
-    fo.write("Reading switches.log, %s\n" % os.path.abspath(f.name))
+    now = strftime("%Y-%m-%d %H:%M:%S")
+    fo.write(" %s, Reading switches.log from: %s\n\n" % (now, os.path.abspath(f.name)))
 
     scanct = 1
     while True:
         line = thelog.getline()
-        if line == "":
+        if line == "":                              # read from the log file; empty line means EOF
             break
         if theScanInfo.isNewScan(line):             # this begins a new scan, write out what has accumulated
             fo.write("Starting scan %d\n" %(scanct))
-            scanct += 1
             fo.write(theHistory.gLineBuffer)        # print the lines of history
             fo.write(theScanInfo.printL2Tables())   # print the table information
+            fo.write("End of scan %d\n\n" % (scanct))
 
-            theScanInfo = L2ScanTables(thelog)      # and create a new ScanTables 
-            theHistory = L2HistoryBuffer(thelog)    # and HistoryBuffer
+            theScanInfo = L2ScanTables(thelog)      # Create a new ScanTables object
+            theHistory = L2HistoryBuffer(thelog)    # and HistoryBuffer object
+            scanct += 1                             # and bump the scan counter
+
         # and then process this next line
         theHistory.logit(line)
         theScanInfo.processLine(line)
-
+    fo.write("End of Layer2 log file scan\n")
 
 if __name__ == "__main__":
     sys.exit(main())
