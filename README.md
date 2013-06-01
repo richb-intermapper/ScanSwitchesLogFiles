@@ -1,8 +1,10 @@
 ##ScanL2Logs.py
 
-This program scans InterMapper Layer2 log files to give a view of what occurred.
+This program scans InterMapper Layer2 log files to give a view of what occurred. The 'switches.log' file contains information for each separate scan that the customer performs. This program creates an output file that shows:
 
-The Layer2 discovery process is a series of SNMP table walks for each device. The L2 code asks the InterMapper server for the following tables in sequence, then records the Kali protocol commands in the log file.
+* A history of relevant log file lines. These show the start and end of the scan, as well as notable event and error messages.
+
+* An analysis of the Layer2 scan. The log file contains the results of every scan of the tables (below) from each device. The program displays the success or failure for each of the table scans, as well as a summary of the number of lines.
 
 * dot1d_Info
 * ifTable
@@ -14,17 +16,29 @@ The Layer2 discovery process is a series of SNMP table walks for each device. Th
 * lldpRemManAddrTable
 * lldpRemTable
 
-As scanlogs.py reads the input file it detects:
-
-SQL "INSERT INTO device" lines that contain data about the IMID, the IP address, name/label, and sysSvcs for all "pollers"
-<KC_opentable lines that contain an IMID for a device and the KCid to link it to the following "<KR"
-<KR with a matching KCid that also contains a "table id" and a tableTitle (ifIndex, ifAddrTable, etc.)
-<KU_tabledata lines with the same "table ID" to data, or to a "ParseError" or "NoAnswer" to indicate that it's the last line.
-
-scanl2logs.py collates all the information about these requests to create a CSV output file that looks like this:
+The output file has the format shown below. The 
 
 ```
-Reading switches.log, /Users/richb/Documents/SwitchesLogFiles/switches.log
+ 2013-06-01 19:02:15, Reading switches.log from: /home/dartware/Documents/SwitchesLogFiles/Customer ABC/127.0.0.1-8181-switches.log
+
+Starting scan 1
+ 2013-05-28 11:21:43, Requesting poller list:, 1224, 0 of 0, [MainThread] KALI: <KC_export type='direct' name='devices.csv' id='3033'>#export format=csv table=devices fields=IMIDNameAddressMapIdStatusSnmpVersionIntSysServicesSysObjectIDSysDescrStatusLevelReason match=layer2mapid Tg4c58cb28</KC_export>
+ 2013-05-28 11:22:18, Exception:, 2852, 43 of 44, [MainThread] CMD RECV: EXCEPTION_REQUEST  source=127.0.0.1:3238 id=5 flags=0 length=0   (0)
+ 2013-05-28 11:22:18, Exception:, 2853, 43 of 44, [MainThread] CMD DLProtocolFactory: EXCEPTION_REQUEST  source=127.0.0.1:3238 id=5 flags=0 length=0   (0)
+ 2013-05-28 11:22:18, Exception:, 3197, 43 of 44, [PoolThread-19105192-1] CMD ENTER: EXCEPTION_REQUEST  source=127.0.0.1:3238 id=5 flags=0 length=0   (0)
+ 2013-05-28 11:22:18, Exception:, 3198, 43 of 44, [PoolThread-19105192-1] CMD EXIT: EXCEPTION_REQUEST  source=127.0.0.1:3238 id=5 flags=0 length=0   (0)
+ 2013-05-28 11:22:18, Exception:, 3199, 43 of 44, [MainThread] CMD SEND: EXCEPTION_RESPONSE  source=127.0.0.1:3238 id=5 flags=0 length=100  5f6c697374016578... (100)
+ 2013-05-28 11:22:18, Exception:, 3207, 43 of 44, [MainThread] PERF 46 ms: EXCEPTION_REQUEST  source=127.0.0.1:3238 id=5 flags=0 length=0   (0)
+ 2013-05-28 11:29:09, Aborting previous action:, 3565, 43 of 44, [MainThread] CMD RECV: ABORT_POLL_REQUEST  source=127.0.0.1:3238 id=7 flags=4 length=0   (0)
+ 2013-05-28 11:29:23, Manually start poll:, 3576, 44 of 44, [MainThread] CMD RECV: POLL_NOW_REQUEST  source=127.0.0.1:3238 id=8 flags=4 length=0   (0)
+ 2013-05-28 11:29:23, Requesting poller list:, 3580, 44 of 44, [MainThread] KALI: <KC_export type='direct' name='devices.csv' id='3040'>#export format=csv table=devices fields=IMIDNameAddressMapIdStatusSnmpVersionIntSysServicesSysObjectIDSysDescrStatusLevelReason match=layer2 T</KC_export>
+ 2013-05-28 11:29:24, Scanning tables:, 3586, 44 of 44, [MainThread] KALI: Issuing <KC_opentable commands...
+ 2013-05-28 11:43:58, Scanning tables:, repeated 573 times, until 2013-05-28 11:30:48
+ 2013-05-28 11:43:58, Aborting previous action:, 66323, 42 of 44, [MainThread] CMD RECV: ABORT_POLL_REQUEST  source=127.0.0.1:3238 id=13 flags=4 length=0   (0)
+, Error during scan:, , , Device 0.0.0.0 (zAzzzKzzzWd); table -:; KCID 3415; Never received matching 'KR';  see Table Info below.
+, Error during scan:, , , Device 0.0.0.0 (zAzzzKzzzad); table -:; KCID 3416; Never received matching 'KR';  see Table Info below.
+
+Table Info:
 Start Time, End Time, Start Line, End Line, IMID, HexIP, KCid, TableID, IP, Label, SysSvc, TableName, Rows, Diag
  2013-05-23 14:20:10, 2013-05-23 14:20:10, 1614, 1645, zzzzzQzzzud, 0a000016, 7+, t27216a8+, 10.0.0.22, NPIF5E00D, Host (64), dot1d_Info, 0, 
  2013-05-23 14:20:10, 2013-05-23 14:20:10, 1615, 1649, zzzzzQzzzwd, 0a000018, 8+, t27215c8+, 10.0.0.24, dt151, Host (64), dot1d_Info, 0, 
@@ -36,37 +50,9 @@ Start Time, End Time, Start Line, End Line, IMID, HexIP, KCid, TableID, IP, Labe
  2013-05-23 14:20:10, 2013-05-23 14:20:10, 1654, 1674, zzzzzQzzz4d, 0a00001e, 14+, t27215c8+, 10.0.0.30, ZBR3822532, L3 SwHub, ifTable, 1, 
  2013-05-23 14:20:10, 2013-05-23 14:20:10, 1663, 1689, zzzzzQzzzud, 0a000016, 15+, t27216a8+, 10.0.0.22, NPIF5E00D, Host (64), ifTable, 2, 
 ...
- 2013-05-23 14:20:17,                    , 6905, -, zzzzzQzzCdd, 0a0000d5, 247, -, 10.0.0.213, durham-switch04, 74, -, 0, Never received matching 'KR'; 
-...
- 2013-05-23 14:20:25, 2013-05-23 14:20:25, 9787, 9802, zzzzzOzzzBd, 0a0001d2, 347+, t2721788+, 10.0.1.210, redding-switch01, Host (78), lldpRemManAddrTable, 0, 
- 2013-05-23 14:20:25,                    , 9797, -, zzzzzOzzzBd, 0a0001d2, 348+, t2721788, 10.0.1.210, redding-switch01, Host (78), lldpRemTable, 0, 
- 2013-05-23 14:20:26, 2013-05-23 14:20:38, 9908, 10574, zzzzzOzzzDd, c0a802d2, 349+, t2721948+, 192.168.2.210, sac-switch01, Host (78), cdpCacheTable, 5, 
- 2013-05-23 14:20:26,                    , 9936, -, zzzzzOzzzDd, c0a802d2, 350+, t2721948, 192.168.2.210, sac-switch01, Host (78), lldpRemManAddrTable, 0, 
- 2013-05-23 14:20:26, 2013-05-23 14:20:31, 10034, 10366, zzzzzOzzzCd, 0a0002d2, 351+, t2721b08+, 10.0.2.210, eureka-switch01, Host (78), ipAddrTable, 28, 
- 2013-05-23 14:20:27, 2013-05-23 14:20:31, 10066, 10412, zzzzzOzzzCd, 0a0002d2, 352+, t2721b08+, 10.0.2.210, eureka-switch01, Host (78), dot1dBasePortTable_csi, 0, 
- 2013-05-23 14:20:29,                    , 10099, -, zzzzzQzzCbd, 0a0000d4, 353+, t2721a28, 10.0.0.212, durham-switch03, Host (78), lldpRemTable, 0, 
+End of scan 1
+
+Starting scan 2
+... etc...
 ```
 
-* The first line gives the path and file name of the file being scanned.
-* The second line is a list of the headings for the CSV columns
-* Subsequent lines have this form:
-	* Start Time and End Time show the beginning and end time stamps required to collect this table's data. Blank if no closing line for the table appeared.
-	* Start Line and End Line are the line numbers of the file that show the line for the start of the table data, and the final line for it. "-" for if no closing line for the table appeared.
-	* IMID is the InterMapper IMID for the device.
-	* HexIP is the hexadecimal value of the IP address (*)
-	* KCid is the Kali protocol ID that ties together the <KC_opentable command and its resulting <KR response.
-	* TableID tags each of the <KU_tabledata lines that have an entry for this table. The <KR response contains this TableID.
-	* IP is the dotted-quad IP address (derived to the HexIP) (*)
-	* Label is the first line of the icon's Label (*)
-	* SysSvc is the value of the sysSerivces.0 for the particular device. (*)
-	* TableName is the name of the table being fetched.
-	* Rows is the number of rows returned for the table.
-	* Diag contains diagnostic info, if any. (See KCid 247 for an example)
-	
-(*) NB: the fields labelled with an asterisk have been retrieved from an SQL command inserting the data into the database.
-	
-There are several additional flags in the columns of the CSV data:
-
-* KCid is created when the log file contains a <KC_opentable; the KCid gets a "+" appended when the corresponding <KR appears.
-* TableID holds the id=... for the table (set in the <KR response) for all related table entries. TableID gets a "+" appended when a "ParseError" appears, indicating the end of that table.
-* TableID column also gets marked with a "*" to indicate that a "NoAnswer" appeared, this is tagged with a note in the Diag column, too.

@@ -31,7 +31,7 @@ class L2HistoryBuffer():
                 reason = "Analyzing collected data:"
         elif "ANALYZE" in line:
             reason = "Starting analysis of collected data:"
-        elif "id='1'" in line:
+        elif "<KC_login id='1'" in line:
             reason = "Restarting transaction sequence:"
         elif "<KC_export type='direct' name='devices.csv'" in line:
             reason = "Requesting poller list:"
