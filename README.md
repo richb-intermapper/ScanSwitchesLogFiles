@@ -5,16 +5,15 @@ This program scans InterMapper Layer2 log files to give a view of what occurred.
 * A history of relevant log file lines. These show the start and end of the scan, as well as notable event and error messages.
 
 * An analysis of the Layer2 scan. The log file contains the results of every scan of the tables (below) from each device. The program displays the success or failure for each of the table scans, as well as a summary of the number of lines.
-
-* dot1d_Info
-* ifTable
-* ipAddrTable
-* dot1dBasePortTable_csi
-* dot1dstp_Info_csi
-* dot1dStpPortTable_csi
-* cdpCacheTable
-* lldpRemManAddrTable
-* lldpRemTable
+    * dot1d_Info
+    * ifTable
+    * ipAddrTable
+    * dot1dBasePortTable_csi
+    * dot1dstp_Info_csi
+    * dot1dStpPortTable_csi
+    * cdpCacheTable
+    * lldpRemManAddrTable
+    * lldpRemTable
 
 The output file has the format shown below. The 
 
