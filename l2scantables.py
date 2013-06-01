@@ -102,7 +102,8 @@ class L2ScanTables:
 
     def printL2Tables(self):
 
-        retline = ("%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % ("Start Time", "End Time", "Start Line", "End Line","IMID", "HexIP", "KCid", "TableID", "IP", "Label", "SysSvc", "TableName", "Rows", "Diag"))
+        diagline = ""
+        tableline = "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % ("Start Time", "End Time", "Start Line", "End Line","IMID", "HexIP", "KCid", "TableID", "IP", "Label", "SysSvc", "TableName", "Rows", "Diag")
         for l in self.tablelist:
             st = l['startTime']
             et = l['endTime']
@@ -125,8 +126,10 @@ class L2ScanTables:
                 diag += "Received NoAnswer; "
             elif not "Pa" in tid and r != 0:
                 diag += "Never received end of table data; "
-            retline += " %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % (st, et, sl, el, imid, hexip, kcid, tid, ip, lbl, svc, tn, r, diag)
-        return retline
+            if diag != "":
+                diagline += ", Error during scan:, , , Device %s (%s); table %s:; KCID %s; %s see Table Info below.\n" % (ip, imid, tn, kcid, diag)
+            tableline += " %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % (st, et, sl, el, imid, hexip, kcid, tid, ip, lbl, svc, tn, r, diag)
+        return "%s\nTable Info:\n%s\n" % (diagline, tableline)
 
     def processLine(self, line):
         '''
@@ -142,3 +145,23 @@ class L2ScanTables:
                 self.processTableData(line)
         elif 'SQL #-1: INSERT INTO device' in line:
             self.processSQLline(line)
+
+    def isNewScan(self, line):
+        '''
+        Examine the passed-in line to see if it signals the beginning of a new scan.
+        If the line contains one of several strings, *and* if the tablelist has entries,
+        then it's a new scan.
+        '''
+        startStrings = [
+            "Debug: #erase",
+            "<KC_login id='1'",
+            "CMD RECV: POLL_NOW_REQUEST",
+            " KALI: <KC_export type='direct' name='devices.csv'"
+        ]
+
+        newScan = False
+        for s in startStrings:
+            if s in line:
+                newScan = True
+                break
+        return newScan and (len(self.tablelist) > 0)

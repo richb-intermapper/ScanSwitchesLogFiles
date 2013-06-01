@@ -23,6 +23,8 @@ from l2historybuffer import L2HistoryBuffer
 from l2logfile import L2LogFile
 from l2scantables import L2ScanTables
 
+thelog = None
+theScanInfo = None
 
 def main(argv=None):
 
@@ -37,23 +39,29 @@ def main(argv=None):
     f = theArgs.infile                      # the argument parsing returns open file objects
     fo = theArgs.outfile
 
-    # Now to the meat of the program
+    thelog = L2LogFile(f)                   # initialize the file object
+    theHistory = L2HistoryBuffer(thelog)    # initialize the history of log lines
+    theScanInfo = L2ScanTables(thelog)      # initialize the contents of each of the Layer2 table scans
 
-    thelog = L2LogFile(f)                  # initialize the file object
-    theHistory = L2HistoryBuffer(thelog)
-    theScanInfo = L2ScanTables(thelog)
+    fo.write("Reading switches.log, %s\n" % os.path.abspath(f.name))
 
+    scanct = 1
     while True:
         line = thelog.getline()
         if line == "":
             break
+        if theScanInfo.isNewScan(line):             # this begins a new scan, write out what has accumulated
+            fo.write("Starting scan %d\n" %(scanct))
+            scanct += 1
+            fo.write(theHistory.gLineBuffer)        # print the lines of history
+            fo.write(theScanInfo.printL2Tables())   # print the table information
+
+            theScanInfo = L2ScanTables(thelog)      # and create a new ScanTables 
+            theHistory = L2HistoryBuffer(thelog)    # and HistoryBuffer
+        # and then process this next line
         theHistory.logit(line)
         theScanInfo.processLine(line)
 
-    fo.write("Reading switches.log, %s\n" % os.path.abspath(f.name))
-    fo.write(theHistory.gLineBuffer+"\n")
-    fo.write("Resulting Table Info\n")
-    fo.write(theScanInfo.printL2Tables())                         # print the relevant information
 
 if __name__ == "__main__":
     sys.exit(main())
