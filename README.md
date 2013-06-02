@@ -21,13 +21,6 @@ The output file has the format shown below. Each scan lists interesting log line
  2013-06-01 19:02:15, Reading switches.log from: /home/dartware/Documents/SwitchesLogFiles/Customer ABC/127.0.0.1-8181-switches.log
 
 Starting scan 1
- 2013-05-28 11:21:43, Requesting poller list:, 1224, 0 of 0, [MainThread] KALI: <KC_export type='direct' name='devices.csv' id='3033'>#export format=csv table=devices fields=IMIDNameAddressMapIdStatusSnmpVersionIntSysServicesSysObjectIDSysDescrStatusLevelReason match=layer2mapid Tg4c58cb28</KC_export>
- 2013-05-28 11:22:18, Exception:, 2852, 43 of 44, [MainThread] CMD RECV: EXCEPTION_REQUEST  source=127.0.0.1:3238 id=5 flags=0 length=0   (0)
- 2013-05-28 11:22:18, Exception:, 2853, 43 of 44, [MainThread] CMD DLProtocolFactory: EXCEPTION_REQUEST  source=127.0.0.1:3238 id=5 flags=0 length=0   (0)
- 2013-05-28 11:22:18, Exception:, 3197, 43 of 44, [PoolThread-19105192-1] CMD ENTER: EXCEPTION_REQUEST  source=127.0.0.1:3238 id=5 flags=0 length=0   (0)
- 2013-05-28 11:22:18, Exception:, 3198, 43 of 44, [PoolThread-19105192-1] CMD EXIT: EXCEPTION_REQUEST  source=127.0.0.1:3238 id=5 flags=0 length=0   (0)
- 2013-05-28 11:22:18, Exception:, 3199, 43 of 44, [MainThread] CMD SEND: EXCEPTION_RESPONSE  source=127.0.0.1:3238 id=5 flags=0 length=100  5f6c697374016578... (100)
- 2013-05-28 11:22:18, Exception:, 3207, 43 of 44, [MainThread] PERF 46 ms: EXCEPTION_REQUEST  source=127.0.0.1:3238 id=5 flags=0 length=0   (0)
  2013-05-28 11:29:09, Aborting previous action:, 3565, 43 of 44, [MainThread] CMD RECV: ABORT_POLL_REQUEST  source=127.0.0.1:3238 id=7 flags=4 length=0   (0)
  2013-05-28 11:29:23, Manually start poll:, 3576, 44 of 44, [MainThread] CMD RECV: POLL_NOW_REQUEST  source=127.0.0.1:3238 id=8 flags=4 length=0   (0)
  2013-05-28 11:29:23, Requesting poller list:, 3580, 44 of 44, [MainThread] KALI: <KC_export type='direct' name='devices.csv' id='3040'>#export format=csv table=devices fields=IMIDNameAddressMapIdStatusSnmpVersionIntSysServicesSysObjectIDSysDescrStatusLevelReason match=layer2 T</KC_export>
