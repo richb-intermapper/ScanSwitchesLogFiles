@@ -129,7 +129,7 @@ class L2ScanTables:
             elif not "Pa" in tid and r != 0:
                 diag += "Never received end of table data; "
             if diag != "":
-                self.diaglines += ", Error during scan:, , , Device %s (%s); table %s:; KCID %s; %s \n" % (ip, imid, tn, kcid, diag)
+                self.diaglines += ", Error during scan:, %s, , Device %s (%s); table %s:; KCID %s; %s \n" % (sl, ip, imid, tn, kcid, diag)
             self.tablelines += " %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % (st, et, sl, el, imid, hexip, kcid, tid, ip, lbl, svc, tn, r, diag)
         return (self.diaglines, self.tablelines)
 
