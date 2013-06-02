@@ -45,8 +45,14 @@ class L2HistoryBuffer():
         elif "CMD RECV: POLL_NOW_REQUEST" in line:
             reason = "Manually start poll:"
         elif "<KC_opentable" in line:
-            reason = "Scanning tables:"
+            reason = "Scanning tables:"                 # pass in known 'data' so that it can collapse duplicate lines
             data = line[0:24]+" [MainThread] KALI: Issuing <KC_opentable commands...\n"
+        elif "unknown" in line.lower():
+            if "KU_tabledata: Unknown tableID" not in line:
+                reason = "Found 'unknown'"
+        # elif "ParseError" not in line:                # ignore ParseError
+        #     if "error" in line.lower():               # but keep 'error' lines
+        #         reason = "Found 'Error'"              # commented out - doesn't find anything useful
         elif " DETAIL:" in line:
             kvs = {k:v.strip("'") for k,v in re.findall(r"\('(\S+)', ('.*?')\)", line)}
             if  "'phase'" in line:
@@ -72,7 +78,7 @@ class L2HistoryBuffer():
             self.prevtime = l[0:19]
         else:
             if self.dupcount != 0:              # if there were duplicated lines...
-                self.gLineBuffer += " %s, %s, repeated %d times, until %s\n" %(l[0:19], self.reason, self.dupcount, self.prevtime )
+                self.gLineBuffer += " %s, %s, total %d times, until %s\n" %(l[0:19], self.reason, self.dupcount+1, self.prevtime )
             self.gLineBuffer += " %s, %s, %s, %s of %s, %s" %(l[0:19], reason, self.thelog.linenum, self.stepdev, self.totaldev , tail )
             self.reason = reason
             self.prevtail = tail
