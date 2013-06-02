@@ -15,7 +15,7 @@ This program scans InterMapper Layer2 log files to give a view of what occurred.
   * lldpRemManAddrTable
   * lldpRemTable
 
-The output file has the format shown below. The 
+The output file has the format shown below. Each scan lists interesting log lines, then the details of all the scanned tables.
 
 ```
  2013-06-01 19:02:15, Reading switches.log from: /home/dartware/Documents/SwitchesLogFiles/Customer ABC/127.0.0.1-8181-switches.log
