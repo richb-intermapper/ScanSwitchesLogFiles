@@ -26,13 +26,17 @@ from l2scantables import L2ScanTables
 
 thelog = None
 theScanInfo = None
+printTables = False
 
 def makeScanSummary(lines, diags, tables, scanct):
     retline = "Starting scan %d\n" %(scanct)            # Heading line
     retline += lines                                    # print the lines of history
     retline += diags
-    retline += "\nSNMP Tables for scan %d:\n" % (scanct)
-    retline += tables                                   # print the table information
+    if printTables:
+        retline += "\nSNMP Tables for scan %d:\n" % (scanct)
+        retline += tables                               # print the table information
+    else:
+        retline += "\nSNMP Tables not displayed:\n"
     retline += "End of scan %d\n\n" % (scanct)          # and epilog
     return retline
 
@@ -42,9 +46,13 @@ def main(argv=None):
         parser = argparse.ArgumentParser(description=__doc__)
         parser.add_argument("-i", '--infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin)
         parser.add_argument("-o", '--outfile', nargs='?', type=argparse.FileType('w'), default=sys.stdout)
+        parser.add_argument("--notables", action="store_false", help="Don't print the tables")
         theArgs = parser.parse_args()
     except Exception, err:
         return str(err)
+
+    global printTables
+    printTables = theArgs.notables
 
     f = theArgs.infile                      # the argument parsing returns open file objects
     fo = theArgs.outfile
