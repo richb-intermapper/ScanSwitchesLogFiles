@@ -21,7 +21,6 @@ The output file has the format shown below. Each scan lists interesting log line
  2013-06-01 19:02:15, Reading switches.log from: /home/dartware/Documents/SwitchesLogFiles/Customer ABC/127.0.0.1-8181-switches.log
 
 Starting scan 1
- 2013-05-28 11:29:09, Aborting previous action:, 3565, 43 of 44, [MainThread] CMD RECV: ABORT_POLL_REQUEST  source=127.0.0.1:3238 id=7 flags=4 length=0   (0)
  2013-05-28 11:29:23, Manually start poll:, 3576, 44 of 44, [MainThread] CMD RECV: POLL_NOW_REQUEST  source=127.0.0.1:3238 id=8 flags=4 length=0   (0)
  2013-05-28 11:29:23, Requesting poller list:, 3580, 44 of 44, [MainThread] KALI: <KC_export type='direct' name='devices.csv' id='3040'>#export format=csv table=devices fields=IMIDNameAddressMapIdStatusSnmpVersionIntSysServicesSysObjectIDSysDescrStatusLevelReason match=layer2 T</KC_export>
  2013-05-28 11:29:24, Scanning tables:, 3586, 44 of 44, [MainThread] KALI: Issuing <KC_opentable commands...
