@@ -18,9 +18,10 @@ This program scans InterMapper Layer2 log files to give a view of what occurred.
 The output file has the format shown below. Each scan lists interesting log lines, then the details of all the scanned tables.
 
 ```
- 2013-06-01 19:02:15, Reading switches.log from: /home/dartware/Documents/SwitchesLogFiles/Customer ABC/127.0.0.1-8181-switches.log
+ 2013-06-01 19:02:15, Reading switches.log from: /home/intermapper/Documents/SwitchesLogFiles/Customer ABC/127.0.0.1-8181-switches.log
 
 Starting scan 1
+Time, State, Line, Progress, Message
  2013-05-28 11:29:23, Manually start poll:, 3576, 44 of 44, [MainThread] CMD RECV: POLL_NOW_REQUEST  source=127.0.0.1:3238 id=8 flags=4 length=0   (0)
  2013-05-28 11:29:23, Requesting poller list:, 3580, 44 of 44, [MainThread] KALI: <KC_export type='direct' name='devices.csv' id='3040'>#export format=csv table=devices fields=IMIDNameAddressMapIdStatusSnmpVersionIntSysServicesSysObjectIDSysDescrStatusLevelReason match=layer2 T</KC_export>
  2013-05-28 11:29:24, Scanning tables:, 3586, 44 of 44, [MainThread] KALI: Issuing <KC_opentable commands...
