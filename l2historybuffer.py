@@ -26,6 +26,8 @@ class L2HistoryBuffer():
         data = line
         if "Debug: #erase" in line:
             reason = "Erasing database:"
+        elif "Debug: #set" in line:
+            reason = "Setting flags"
         elif "ALGORITHM" in line:
             if "computeSimpleConnection" not in line and "computeSwitchIntersection" not in line:
                 reason = "Analyzing collected data:"
@@ -35,6 +37,9 @@ class L2HistoryBuffer():
             reason = "Restarting transaction sequence:"
         elif "<KC_export type='direct' name='devices.csv'" in line:
             reason = "Requesting poller list:"
+        elif "SQL #-1: INSERT INTO device" in line:
+            reason = "Adding to Devices table"
+            data = line[0:24] + " Inserting into devices table\n"
         elif "CMD RECV: ABORT_POLL_REQUEST" in line:
             reason = "Aborting previous action:"
         elif "CMD RECV: POLL_NOW_REQUEST" in line:
@@ -48,8 +53,8 @@ class L2HistoryBuffer():
                 self.stepdev = kvs['step']          # simply record our progress for use in subsequent report lines
                 self.totaldev = kvs['total']
                 reason = ""                         # but don't log the info
-            # elif "'_list', 'endpoints'" in line:
-            #     self.addTogLineBuffer("Sending endpoints to GUI:", line)
+            elif "'alg.cdp.strict'" in line:
+                reason = "Flags:"
             # elif "'_list', 'switch_to_switch'" in line:
             #     self.addTogLineBuffer("Sending switch-to-switch to GUI:", line)
         elif "EXCEPTION" in line:
