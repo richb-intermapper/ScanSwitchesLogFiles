@@ -37,7 +37,7 @@ Starting scan 1
 , Error during scan:, , , Device 0.0.0.0 (zAzzzKzzzWd); table -:; KCID 3415; Never received matching 'KR';  see Table Info below.
 , Error during scan:, , , Device 0.0.0.0 (zAzzzKzzzad); table -:; KCID 3416; Never received matching 'KR';  see Table Info below.
 
-Table Info:
+SNMP Tables for scan 1:
 Start Time, End Time, Start Line, End Line, IMID, HexIP, KCid, TableID, IP, Label, SysSvc, TableName, Rows, Diag
  2013-05-23 14:20:10, 2013-05-23 14:20:10, 1614, 1645, zzzzzQzzzud, 0a000016, 7+, t27216a8+, 10.0.0.22, NPIF5E00D, Host (64), dot1d_Info, 0, 
  2013-05-23 14:20:10, 2013-05-23 14:20:10, 1615, 1649, zzzzzQzzzwd, 0a000018, 8+, t27215c8+, 10.0.0.24, dt151, Host (64), dot1d_Info, 0, 
