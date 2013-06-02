@@ -15,6 +15,8 @@ class L2ScanTables:
         self.adrsdict = {}                               # IP addresses, indexed by imid
         self.syssvcdict = {}                             # and the system services
         self.thelog = thelog
+        self.diaglines = ""
+        self.tablelines = ""
 
         self.syssvclookup = {
             '1': "Hub",
@@ -102,8 +104,8 @@ class L2ScanTables:
 
     def printL2Tables(self):
 
-        diagline = ""
-        tableline = "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % ("Start Time", "End Time", "Start Line", "End Line","IMID", "HexIP", "KCid", "TableID", "IP", "Label", "SysSvc", "TableName", "Rows", "Diag")
+        self.diaglines = ""
+        self.tablelines = "%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % ("Start Time", "End Time", "Start Line", "End Line","IMID", "HexIP", "KCid", "TableID", "IP", "Label", "SysSvc", "TableName", "Rows", "Diag")
         for l in self.tablelist:
             st = l['startTime']
             et = l['endTime']
@@ -127,9 +129,9 @@ class L2ScanTables:
             elif not "Pa" in tid and r != 0:
                 diag += "Never received end of table data; "
             if diag != "":
-                diagline += ", Error during scan:, , , Device %s (%s); table %s:; KCID %s; %s see Table Info below.\n" % (ip, imid, tn, kcid, diag)
-            tableline += " %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % (st, et, sl, el, imid, hexip, kcid, tid, ip, lbl, svc, tn, r, diag)
-        return "%s\nTable Info:\n%s" % (diagline, tableline)
+                self.diaglines += ", Error during scan:, , , Device %s (%s); table %s:; KCID %s; %s \n" % (ip, imid, tn, kcid, diag)
+            self.tablelines += " %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\n" % (st, et, sl, el, imid, hexip, kcid, tid, ip, lbl, svc, tn, r, diag)
+        return (self.diaglines, self.tablelines)
 
     def processLine(self, line):
         '''

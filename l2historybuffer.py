@@ -8,7 +8,7 @@ class L2HistoryBuffer():
         self.clearHistory(thelog)
 
     def clearHistory(self, thelog):
-        self.gLineBuffer = ""
+        self.gLineBuffer = "Time, State, Line, Progress, Message\n"
         self.reason = ""
         self.prevtail = ""
         self.prevtime = ""                  # end of the duplicates - remembered each time we ignore one

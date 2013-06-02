@@ -27,6 +27,15 @@ from l2scantables import L2ScanTables
 thelog = None
 theScanInfo = None
 
+def makeScanSummary(lines, diags, tables, scanct):
+    retline = "Starting scan %d\n" %(scanct)            # Heading line
+    retline += lines                                    # print the lines of history
+    retline += diags
+    retline += "\nSNMP Tables for scan %d:\n" % (scanct)
+    retline += tables                                   # print the table information
+    retline += "End of scan %d\n\n" % (scanct)          # and epilog
+    return retline
+
 def main(argv=None):
 
     try:
@@ -53,10 +62,9 @@ def main(argv=None):
         if line == "":                              # read from the log file; empty line means EOF
             break
         if theScanInfo.isNewScan(line):             # this begins a new scan, write out what has accumulated
-            fo.write("Starting scan %d\n" %(scanct))
-            fo.write(theHistory.gLineBuffer)        # print the lines of history
-            fo.write(theScanInfo.printL2Tables())   # print the table information
-            fo.write("End of scan %d\n\n" % (scanct))
+            (diags, tables) = theScanInfo.printL2Tables()
+            report = makeScanSummary(theHistory.gLineBuffer, diags, tables, scanct)
+            fo.write(report)
 
             theScanInfo = L2ScanTables(thelog)      # Create a new ScanTables object
             theHistory = L2HistoryBuffer(thelog)    # and HistoryBuffer object
@@ -65,7 +73,13 @@ def main(argv=None):
         # and then process this next line
         theHistory.logit(line)
         theScanInfo.processLine(line)
-    fo.write("End of Layer2 log file scan\n")
+
+    if len(theScanInfo.tablelist) != 0:
+        (diags, tables) = theScanInfo.printL2Tables()
+        report = makeScanSummary(theHistory.gLineBuffer, diags, tables, scanct)
+        fo.write(report)
+
+    fo.write("End of Layer2 log file scan \n")
 
 if __name__ == "__main__":
     sys.exit(main())
