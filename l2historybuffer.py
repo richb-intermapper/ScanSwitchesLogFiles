@@ -11,7 +11,8 @@ class L2HistoryBuffer():
         self.gLineBuffer = "Time, State, Line, Progress, Message\n"
         self.reason = ""
         self.prevtail = ""
-        self.prevtime = ""                  # end of the duplicates - remembered each time we ignore one
+        self.startdup = ""                  # First of the duplicate lines
+        self.lastdup = ""                   # last of the duplicates
         self.dupcount = 0
         self.stepdev = 0
         self.totaldev = 0
@@ -25,9 +26,16 @@ class L2HistoryBuffer():
         reason = ""
         data = line
         if "Debug: #erase" in line:
-            reason = "Erasing database:"
+            reason = "Erasing database"
         elif "Debug: #set" in line:
-            reason = "Setting flags"
+            reason = "Setting flags:"
+        elif "CONN:" in line:
+            reason = "Connection change:"
+        elif "CMD SEND:" in line:
+            if "PROGRESS_REQUEST" not in line:
+                reason = "Sending to GUI:"
+                pos = line.find("source=")
+                data = line[0:pos]
         elif "ALGORITHM" in line:
             if "computeSimpleConnection" not in line and "computeSwitchIntersection" not in line:
                 reason = "Analyzing collected data:"
@@ -37,7 +45,7 @@ class L2HistoryBuffer():
             reason = "Restarting transaction sequence:"
         elif "<KC_export type='direct' name='devices.csv'" in line:
             reason = "Requesting poller list:"
-        elif "SQL #-1: INSERT INTO device" in line:
+        elif "SQL #-1: INSERT INTO device " in line:
             reason = "Adding to Devices table"
             data = line[0:24] + " Inserting into devices table\n"
         elif "CMD RECV: ABORT_POLL_REQUEST" in line:
@@ -48,7 +56,7 @@ class L2HistoryBuffer():
             reason = "Scanning tables:"                 # pass in known 'data' so that it can collapse duplicate lines
             data = line[0:24]+" [MainThread] KALI: Issuing <KC_opentable commands...\n"
         elif "unknown" in line.lower():
-            if "KU_tabledata: Unknown tableID" not in line:
+            if "KU_tabledata: Unknown tableID" not in line and "DETAIL:" not in line:
                 reason = "Found 'unknown'"
         # elif "ParseError" not in line:                # ignore ParseError
         #     if "error" in line.lower():               # but keep 'error' lines
@@ -67,6 +75,8 @@ class L2HistoryBuffer():
             if "COMMAND_INVALID_PARAM" not in line: # ignore bad typing from customer in filter field
                 reason = "Exception:"
         if reason != "":                            # no reason - don't log it
+            if data[-1] != "\n":
+                data += "\n"
             self.addToBuffer(reason, data)
 
 
@@ -75,12 +85,13 @@ class L2HistoryBuffer():
         tail = l[25:]
         if tail == self.prevtail:
             self.dupcount += 1
-            self.prevtime = l[0:19]
+            self.lastdup = l[0:19]
         else:
             if self.dupcount != 0:              # if there were duplicated lines...
-                self.gLineBuffer += " %s, %s, total %d times, until %s\n" %(l[0:19], self.reason, self.dupcount+1, self.prevtime )
+                self.gLineBuffer += " %s, %s, total %d times, until %s\n" %(self.startdup, self.reason, self.dupcount+1, self.lastdup )
             self.gLineBuffer += " %s, %s, %s, %s of %s, %s" %(l[0:19], reason, self.thelog.linenum, self.stepdev, self.totaldev , tail )
             self.reason = reason
             self.prevtail = tail
-            self.prevtime = line[0:19]
+            self.startdup = line[0:19]
+            self.lastdup = self.startdup
             self.dupcount = 0
