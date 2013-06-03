@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 class L2HistoryBuffer():
     '''
@@ -22,6 +23,9 @@ class L2HistoryBuffer():
     def logit(self, line):
         '''
         Examine each line to see if it should be entered into the history buffer
+        Set the 'reason' if the line matches one of the interesting strings
+        Set the 'data' if the duplicate detection should operate on a substring of the line,
+           otherwise, the entire line will be recorded.
         '''
         reason = ""
         data = line
@@ -88,7 +92,10 @@ class L2HistoryBuffer():
             self.lastdup = l[0:19]
         else:
             if self.dupcount != 0:              # if there were duplicated lines...
-                self.gLineBuffer += " %s, %s, total %d times, until %s\n" %(self.startdup, self.reason, self.dupcount+1, self.lastdup )
+                stime = datetime.strptime(self.startdup, "%Y-%m-%d %H:%M:%S")
+                etime = datetime.strptime(self.lastdup,  "%Y-%m-%d %H:%M:%S")
+                delta = etime - stime
+                self.gLineBuffer += " %s, %s, total %d times, until %s (%s)\n" %(self.startdup, self.reason, self.dupcount+1, self.lastdup, delta )
             self.gLineBuffer += " %s, %s, %s, %s of %s, %s" %(l[0:19], reason, self.thelog.linenum, self.stepdev, self.totaldev , tail )
             self.reason = reason
             self.prevtail = tail
