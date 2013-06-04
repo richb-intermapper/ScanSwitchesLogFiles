@@ -67,25 +67,21 @@ def main(argv=None):
     scanct = 1
     while True:
         line = thelog.getline()
-        if line == "":                              # read from the log file; empty line means EOF
-            break
-        if theScanInfo.isNewScan(line):             # this begins a new scan, write out what has accumulated
+        if line == "" or theScanInfo.isNewScan(line):       # EOF or starting a new scan, write out what has accumulated
             (diags, tables) = theScanInfo.printL2Tables()
             report = makeScanSummary(theHistory.gLineBuffer, diags, tables, scanct)
             fo.write(report)
 
-            theScanInfo = L2ScanTables(thelog)      # Create a new ScanTables object
-            theHistory = L2HistoryBuffer(thelog)    # and HistoryBuffer object
-            scanct += 1                             # and bump the scan counter
+            if line == "":                                  # finally hit EOF, so break out
+                break
+            else:                                           # Otherwise...
+                theScanInfo = L2ScanTables(thelog)          # Create a new ScanTables object
+                theHistory = L2HistoryBuffer(thelog)        # and HistoryBuffer object
+                scanct += 1                                 # and bump the scan counter
 
         # and then process this next line
         theHistory.logit(line)
         theScanInfo.processLine(line)
-
-    if len(theScanInfo.tablelist) != 0:
-        (diags, tables) = theScanInfo.printL2Tables()
-        report = makeScanSummary(theHistory.gLineBuffer, diags, tables, scanct)
-        fo.write(report)
 
     fo.write("End of Layer2 log file scan \n")
 
