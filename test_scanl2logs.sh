@@ -2,7 +2,7 @@
 
 python scanl2logs.py -i "CustomerInfo/RT118983/com.dartware.switches/switches.log.2013_05_23" -o CustomerInfo/Results/dd.csv
 
-python scanl2logs.py -i "CustomerInfo/RT117599/166.77.200.105-8181-switches.log" -o CustomerInfo/Results/pq.csv
+python scanl2logs.py -i "CustomerInfo/RT117599/switches.log" -o CustomerInfo/Results/pq.csv
 
 python scanl2logs.py -i "CustomerInfo/RT118153/192.168.100.26-8181-switches.log" -o CustomerInfo/Results/em.csv
 
