@@ -14,3 +14,4 @@ python scanl2logs.py -i "CustomerInfo/RT119439/127.0.0.1-8181-switches.log" -o C
 
 python scanl2logs.py -i "CustomerInfo/RT119805/com.dartware.switches/switches.log" -o CustomerInfo/Results/Splunk.csv
 
+python scanl2logs.py -i "CustomerInfo/RT119839/switches.log" -o CustomerInfo/Results/dg.csv
