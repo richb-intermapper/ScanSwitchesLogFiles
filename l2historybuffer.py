@@ -35,11 +35,11 @@ class L2HistoryBuffer():
             reason = "Setting flags:"
         elif "CONN:" in line:
             reason = "Connection change:"
-        elif "CMD SEND:" in line:
-            if "PROGRESS_REQUEST" not in line:
-                reason = "Sending to GUI:"
-                pos = line.find("source=")
-                data = line[0:pos]
+        # elif "CMD SEND:" in line:
+        #     if "PROGRESS_REQUEST" not in line:
+        #         reason = "Sending to GUI:"
+        #         pos = line.find("source=")
+        #         data = line[0:pos]
         elif "ALGORITHM" in line:
             if "computeSimpleConnection" not in line and "computeSwitchIntersection" not in line:
                 reason = "Analyzing collected data:"
